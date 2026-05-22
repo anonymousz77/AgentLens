@@ -38,6 +38,12 @@ export function runInit(cwd: string, opts: InitOptions = {}): void {
   const db = openDatabase(repoRoot);
   db.close();
 
+  // Exclude .agentlens/ from git so DB writes don't pollute session diffs.
+  const gitignorePath = path.join(dir, ".gitignore");
+  if (!fs.existsSync(gitignorePath)) {
+    fs.writeFileSync(gitignorePath, "*\n");
+  }
+
   // Write default config if missing or forced.
   if (!fs.existsSync(configPath) || opts.force) {
     fs.writeFileSync(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2) + "\n");

@@ -2,6 +2,8 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { runInit } from "./commands/init";
+import { runSessionStart, runSessionEnd } from "./commands/session";
+import { runSessions } from "./commands/sessions";
 
 const program = new Command();
 
@@ -18,6 +20,33 @@ program
   .option("-f, --force", "reset config (session data is preserved)", false)
   .action((opts: { force?: boolean }) => {
     runInit(process.cwd(), { force: opts.force });
+  });
+
+const sessionCmd = program
+  .command("session")
+  .description("start or end a tracked agent session");
+
+sessionCmd
+  .command("start")
+  .description("snapshot the repo and begin a session")
+  .option("--agent <name>", "name of the agent (e.g. claude-code)")
+  .option("--notes <text>", "free-form notes for this session")
+  .action((opts: { agent?: string; notes?: string }) => {
+    runSessionStart(process.cwd(), opts);
+  });
+
+sessionCmd
+  .command("end")
+  .description("snapshot the repo, compute diff, and close the session")
+  .action(() => {
+    runSessionEnd(process.cwd());
+  });
+
+program
+  .command("sessions")
+  .description("list all recorded sessions")
+  .action(() => {
+    runSessions(process.cwd());
   });
 
 // Placeholder commands wired in later phases. Declared now so `--help` shows
