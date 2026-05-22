@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+
+# AgentLens local data (created by `agentlens init`)
+.agentlens/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
