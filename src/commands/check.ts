@@ -1,9 +1,7 @@
 import pc from "picocolors";
 import { detectChecks } from "../checks/detect";
 import { runCommand } from "../checks/run";
-import { parse as parseVitest } from "../checks/parsers/vitest";
-import { parse as parseTsc } from "../checks/parsers/tsc";
-import { parse as parseEslint } from "../checks/parsers/eslint";
+import { selectParsers } from "../checks/parsers/index";
 import type { ParseResult } from "../checks/parsers/types";
 
 export function runCheck(cwd: string): void {
@@ -14,11 +12,13 @@ export function runCheck(cwd: string): void {
     return;
   }
 
+  const parsers = selectParsers(detected.ecosystem);
+
   if (detected.test) {
     console.log(pc.dim("  running test: " + [detected.test.cmd, ...detected.test.args].join(" ")));
     try {
       const res = runCommand(detected.test, cwd);
-      const r = parseVitest(res.output, res.exitCode) as ParseResult;
+      const r = parsers.test(res.output, res.exitCode) as ParseResult;
       console.log(
         "  " + pc.bold("tests") + "  " +
         formatTestResult(r) +
@@ -33,7 +33,7 @@ export function runCheck(cwd: string): void {
     console.log(pc.dim("  running type: " + [detected.type.cmd, ...detected.type.args].join(" ")));
     try {
       const res = runCommand(detected.type, cwd);
-      const r = parseTsc(res.output, res.exitCode);
+      const r = parsers.type(res.output, res.exitCode);
       console.log(
         "  " + pc.bold("type") + "   " +
         (r.failed === 0 ? pc.green("0 errors") : pc.red(r.failed + " error(s)")) +
@@ -48,7 +48,7 @@ export function runCheck(cwd: string): void {
     console.log(pc.dim("  running lint: " + [detected.lint.cmd, ...detected.lint.args].join(" ")));
     try {
       const res = runCommand(detected.lint, cwd);
-      const r = parseEslint(res.output, res.exitCode);
+      const r = parsers.lint(res.output, res.exitCode);
       console.log(
         "  " + pc.bold("lint") + "   " +
         (r.failed === 0 ? pc.green("0 errors") : pc.red(r.failed + " error(s)")) +

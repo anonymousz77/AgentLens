@@ -10,6 +10,7 @@ export interface DetectionResult {
   test: CommandSpec | null;
   type: CommandSpec | null;
   lint: CommandSpec | null;
+  ecosystem: "js" | "python" | null;
 }
 
 // npm default test stub — not a real test command
@@ -21,8 +22,8 @@ export function detectChecks(repoRoot: string): DetectionResult {
     const raw = fs.readFileSync(path.join(repoRoot, "package.json"), "utf8");
     pkg = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    // no package.json or parse error — all checks null
-    return { test: null, type: null, lint: null };
+    // no package.json — try Python
+    return detectPython(repoRoot);
   }
 
   const scripts = (pkg["scripts"] ?? {}) as Record<string, string>;
@@ -35,6 +36,7 @@ export function detectChecks(repoRoot: string): DetectionResult {
     test: detectTest(repoRoot, scripts, deps),
     type: detectType(repoRoot, deps),
     lint: detectLint(repoRoot, deps),
+    ecosystem: "js",
   };
 }
 
@@ -104,4 +106,28 @@ function hasConfigFile(dir: string, pattern: RegExp): boolean {
   } catch {
     return false;
   }
+}
+
+function detectPython(repoRoot: string): DetectionResult {
+  const markers = [
+    "pyproject.toml",
+    "setup.py",
+    "setup.cfg",
+    "requirements.txt",
+    "conftest.py",
+  ];
+  const hasPythonMarker =
+    markers.some((m) => fs.existsSync(path.join(repoRoot, m))) ||
+    hasConfigFile(repoRoot, /^test_.*\.py$/);
+
+  if (!hasPythonMarker) {
+    return { test: null, type: null, lint: null, ecosystem: null };
+  }
+
+  return {
+    test: { cmd: "python", args: ["-m", "pytest"] },
+    type: { cmd: "python", args: ["-m", "mypy", "."] },
+    lint: { cmd: "python", args: ["-m", "ruff", "check", "."] },
+    ecosystem: "python",
+  };
 }

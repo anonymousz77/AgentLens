@@ -14,9 +14,7 @@ import {
 } from "../db/sessions";
 import { detectChecks } from "../checks/detect";
 import { runCommand } from "../checks/run";
-import { parse as parseVitest } from "../checks/parsers/vitest";
-import { parse as parseTsc } from "../checks/parsers/tsc";
-import { parse as parseEslint } from "../checks/parsers/eslint";
+import { selectParsers } from "../checks/parsers/index";
 import type { Check, CheckPhase } from "../types";
 import type { ParseResult } from "../checks/parsers/types";
 import Database from "better-sqlite3";
@@ -55,6 +53,7 @@ function runAndStoreChecks(
 ): string[] {
   const detected = detectChecks(cwd);
   const summaryLines: string[] = [];
+  const parsers = selectParsers(detected.ecosystem);
 
   const tasks: Array<{
     kind: "test" | "type" | "lint";
@@ -62,9 +61,9 @@ function runAndStoreChecks(
     parse: (output: string, exitCode: number) => ParseResult;
   }> = [];
 
-  if (detected.test) tasks.push({ kind: "test", spec: detected.test, parse: parseVitest });
-  if (detected.type) tasks.push({ kind: "type", spec: detected.type, parse: parseTsc });
-  if (detected.lint) tasks.push({ kind: "lint", spec: detected.lint, parse: parseEslint });
+  if (detected.test) tasks.push({ kind: "test", spec: detected.test, parse: parsers.test });
+  if (detected.type) tasks.push({ kind: "type", spec: detected.type, parse: parsers.type });
+  if (detected.lint) tasks.push({ kind: "lint", spec: detected.lint, parse: parsers.lint });
 
   for (const task of tasks) {
     try {
