@@ -3,7 +3,9 @@
     "allow": [
       "Bash(git *)",
       "Bash(node *)",
-      "Bash(where git *)"
+      "Bash(where git *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Get-ChildItem *2)"
     ]
   }
 }

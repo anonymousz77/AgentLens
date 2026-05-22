@@ -4,6 +4,7 @@ import pc from "picocolors";
 import { runInit } from "./commands/init";
 import { runSessionStart, runSessionEnd } from "./commands/session";
 import { runSessions } from "./commands/sessions";
+import { runCheck } from "./commands/check";
 
 const program = new Command();
 
@@ -47,6 +48,13 @@ program
   .description("list all recorded sessions")
   .action(() => {
     runSessions(process.cwd());
+  });
+
+program
+  .command("check")
+  .description("detect and run checks once (no session) — for debugging detection")
+  .action(() => {
+    runCheck(process.cwd());
   });
 
 // Placeholder commands wired in later phases. Declared now so `--help` shows

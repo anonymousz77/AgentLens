@@ -4,6 +4,7 @@
  */
 
 export type CheckKind = "test" | "type" | "lint" | "coverage";
+export type CheckPhase = "baseline" | "final";
 export type RegressionSeverity = "low" | "medium" | "high" | "critical";
 
 export interface Session {
@@ -33,6 +34,7 @@ export interface Check {
   id: string;
   session_id: string;
   kind: CheckKind;
+  phase: CheckPhase;
   passed: number;
   failed: number;
   total: number;

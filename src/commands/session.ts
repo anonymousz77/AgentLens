@@ -5,7 +5,21 @@ import pc from "picocolors";
 import { agentlensDir, isInitialized, openDatabase } from "../db/database";
 import { computeDiff } from "../git/diff";
 import { assertGitRepo, takeSnapshot } from "../git/snapshot";
-import { insertDiff, insertSession, updateSession } from "../db/sessions";
+import {
+  insertDiff,
+  insertSession,
+  updateSession,
+  insertCheck,
+  getChecksByPhase,
+} from "../db/sessions";
+import { detectChecks } from "../checks/detect";
+import { runCommand } from "../checks/run";
+import { parse as parseVitest } from "../checks/parsers/vitest";
+import { parse as parseTsc } from "../checks/parsers/tsc";
+import { parse as parseEslint } from "../checks/parsers/eslint";
+import type { Check, CheckPhase } from "../types";
+import type { ParseResult } from "../checks/parsers/types";
+import Database from "better-sqlite3";
 
 export interface SessionStartOptions {
   agent?: string;
@@ -31,6 +45,108 @@ function currentHead(repoRoot: string): string {
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
   }).trim();
+}
+
+function runAndStoreChecks(
+  db: Database.Database,
+  sessionId: string,
+  cwd: string,
+  phase: CheckPhase
+): string[] {
+  const detected = detectChecks(cwd);
+  const summaryLines: string[] = [];
+
+  const tasks: Array<{
+    kind: "test" | "type" | "lint";
+    spec: NonNullable<ReturnType<typeof detectChecks>["test"]>;
+    parse: (output: string, exitCode: number) => ParseResult;
+  }> = [];
+
+  if (detected.test) tasks.push({ kind: "test", spec: detected.test, parse: parseVitest });
+  if (detected.type) tasks.push({ kind: "type", spec: detected.type, parse: parseTsc });
+  if (detected.lint) tasks.push({ kind: "lint", spec: detected.lint, parse: parseEslint });
+
+  for (const task of tasks) {
+    try {
+      const res = runCommand(task.spec, cwd);
+      const r = task.parse(res.output, res.exitCode);
+      insertCheck(db, {
+        session_id: sessionId,
+        kind: task.kind,
+        phase,
+        passed: r.passed,
+        failed: r.failed,
+        total: r.total,
+        coverage_pct: r.coverage_pct ?? null,
+        runtime_ms: res.runtime_ms,
+        raw_output: res.output,
+      });
+
+      if (task.kind === "test") {
+        summaryLines.push(`tests: ${r.passed}/${r.total}`);
+        if (r.coverage_pct !== null) {
+          summaryLines.push(`coverage: ${r.coverage_pct.toFixed(1)}%`);
+        }
+      } else if (task.kind === "type") {
+        summaryLines.push(`type errors: ${r.failed}`);
+      } else {
+        summaryLines.push(`lint errors: ${r.failed}`);
+      }
+    } catch (e) {
+      console.warn(pc.yellow(`  ⚠ ${task.kind} check failed: ${String(e)}`));
+    }
+  }
+
+  return summaryLines;
+}
+
+function printDeltas(baseline: Check[], final: Check[]): void {
+  const kinds: Array<"test" | "type" | "lint"> = ["test", "type", "lint"];
+  const lines: string[] = [];
+
+  for (const kind of kinds) {
+    const b = baseline.find((c) => c.kind === kind);
+    const f = final.find((c) => c.kind === kind);
+    if (!b || !f) continue;
+
+    if (kind === "test") {
+      const change =
+        f.passed === b.passed && f.total === b.total
+          ? pc.dim("(no change)")
+          : f.passed < b.passed
+          ? pc.red("↓")
+          : pc.green("↑");
+      lines.push(
+        `  tests:       ${b.passed}/${b.total} → ${f.passed}/${f.total} ${change}`
+      );
+      if (b.coverage_pct !== null || f.coverage_pct !== null) {
+        const bCov = b.coverage_pct !== null ? b.coverage_pct.toFixed(1) + "%" : "n/a";
+        const fCov = f.coverage_pct !== null ? f.coverage_pct.toFixed(1) + "%" : "n/a";
+        lines.push(`  coverage:    ${bCov} → ${fCov}`);
+      }
+    } else if (kind === "type") {
+      const change =
+        f.failed === b.failed
+          ? pc.dim("(no change)")
+          : f.failed > b.failed
+          ? pc.red("↑")
+          : pc.green("↓");
+      lines.push(`  type errors: ${b.failed} → ${f.failed} ${change}`);
+    } else {
+      const change =
+        f.failed === b.failed
+          ? pc.dim("(no change)")
+          : f.failed > b.failed
+          ? pc.red("↑")
+          : pc.green("↓");
+      lines.push(`  lint errors: ${b.failed} → ${f.failed} ${change}`);
+    }
+  }
+
+  if (lines.length > 0) {
+    console.log(pc.bold("Deltas:"));
+    for (const line of lines) console.log(line);
+  }
 }
 
 export function runSessionStart(
@@ -62,16 +178,23 @@ export function runSessionStart(
     git_base_sha: headSha,
     notes: opts.notes ?? null,
   });
+
+  console.log(pc.dim("  running baseline checks..."));
+  const summary = runAndStoreChecks(db, sessionId, cwd, "baseline");
   db.close();
 
   const payload: ActiveSession = { sessionId, s0Sha };
   fs.writeFileSync(active, JSON.stringify(payload, null, 2) + "\n");
 
+  const sid = pc.cyan("#" + shortId(sessionId));
+  const baselineSummary = summary.length > 0 ? " " + summary.join(", ") : "";
   console.log(
     pc.green(pc.bold("✓")) +
       " Session " +
-      pc.cyan("#" + shortId(sessionId)) +
-      " started. Run your agent, then " +
+      sid +
+      " started." +
+      (baselineSummary ? pc.dim(" Baseline:" + baselineSummary + ".") : "") +
+      " Run your agent, then " +
       pc.bold("agentlens session end") +
       "."
   );
@@ -101,6 +224,10 @@ export function runSessionEnd(cwd: string): void {
   const endedAt = new Date().toISOString();
 
   const db = openDatabase(cwd);
+
+  console.log(pc.dim("  running final checks..."));
+  runAndStoreChecks(db, sessionId, cwd, "final");
+
   db.transaction(() => {
     updateSession(db, { id: sessionId, ended_at: endedAt, git_head_sha: headSha });
     insertDiff(db, {
@@ -111,6 +238,9 @@ export function runSessionEnd(cwd: string): void {
       patch,
     });
   })();
+
+  const baseline = getChecksByPhase(db, sessionId, "baseline");
+  const final = getChecksByPhase(db, sessionId, "final");
   db.close();
 
   fs.unlinkSync(active);
@@ -133,4 +263,6 @@ export function runSessionEnd(cwd: string): void {
         pc.red("-" + String(linesRemoved))
     );
   }
+
+  printDeltas(baseline, final);
 }

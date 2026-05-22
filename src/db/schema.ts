@@ -8,7 +8,7 @@
  * Bump SCHEMA_VERSION whenever the shape changes and add a migration step.
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS checks (
   id           TEXT PRIMARY KEY,
   session_id   TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   kind         TEXT NOT NULL CHECK (kind IN ('test','type','lint','coverage')),
+  phase        TEXT NOT NULL DEFAULT 'final' CHECK (phase IN ('baseline','final')),
   passed       INTEGER NOT NULL DEFAULT 0,
   failed       INTEGER NOT NULL DEFAULT 0,
   total        INTEGER NOT NULL DEFAULT 0,

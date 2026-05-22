@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import Database from "better-sqlite3";
+import type { Check, CheckKind, CheckPhase } from "../types";
 
 export interface InsertSessionParams {
   repo_path: string;
@@ -78,6 +79,51 @@ export function insertDiff(
     params.patch
   );
   return id;
+}
+
+export interface InsertCheckParams {
+  session_id: string;
+  kind: CheckKind;
+  phase: CheckPhase;
+  passed: number;
+  failed: number;
+  total: number;
+  coverage_pct: number | null;
+  runtime_ms: number;
+  raw_output: string;
+}
+
+export function insertCheck(
+  db: Database.Database,
+  params: InsertCheckParams
+): string {
+  const id = crypto.randomUUID();
+  db.prepare(
+    "INSERT INTO checks (id, session_id, kind, phase, passed, failed, total, coverage_pct, runtime_ms, raw_output) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(
+    id,
+    params.session_id,
+    params.kind,
+    params.phase,
+    params.passed,
+    params.failed,
+    params.total,
+    params.coverage_pct ?? null,
+    params.runtime_ms,
+    params.raw_output
+  );
+  return id;
+}
+
+export function getChecksByPhase(
+  db: Database.Database,
+  sessionId: string,
+  phase: CheckPhase
+): Check[] {
+  return db
+    .prepare("SELECT * FROM checks WHERE session_id = ? AND phase = ?")
+    .all(sessionId, phase) as Check[];
 }
 
 export function listSessions(db: Database.Database): SessionListRow[] {

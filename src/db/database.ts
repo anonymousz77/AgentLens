@@ -30,14 +30,32 @@ export function openDatabase(repoRoot: string): Database.Database {
   const dir = agentlensDir(repoRoot);
   fs.mkdirSync(dir, { recursive: true });
 
+  const isNew = !fs.existsSync(dbPath(repoRoot));
   const db = new Database(dbPath(repoRoot));
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
 
-  // Apply schema (idempotent).
+  // Apply base schema (idempotent — CREATE TABLE IF NOT EXISTS throughout).
   db.exec(SCHEMA_SQL);
 
-  // Record schema version in meta.
+  if (!isNew) {
+    // Run migrations for existing databases.
+    const row = db
+      .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
+      .get() as { value: string } | undefined;
+    const storedVersion = row ? parseInt(row.value, 10) : 0;
+
+    if (storedVersion < 2) {
+      // Add phase column introduced in schema v2. Safe: checks table is always
+      // empty at this migration point (first real use happens after migration).
+      db.exec(
+        "ALTER TABLE checks ADD COLUMN phase TEXT NOT NULL DEFAULT 'final' " +
+          "CHECK (phase IN ('baseline','final'))"
+      );
+    }
+  }
+
+  // Upsert current schema version.
   db.prepare(
     "INSERT INTO meta (key, value) VALUES ('schema_version', ?) " +
       "ON CONFLICT(key) DO UPDATE SET value = excluded.value"
