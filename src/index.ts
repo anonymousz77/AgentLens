@@ -6,6 +6,7 @@ import { runSessionStart, runSessionEnd } from "./commands/session";
 import { runSessions } from "./commands/sessions";
 import { runCheck } from "./commands/check";
 import { runScore } from "./commands/score";
+import { runStats } from "./commands/stats";
 
 const program = new Command();
 
@@ -47,8 +48,9 @@ sessionCmd
 program
   .command("sessions")
   .description("list all recorded sessions")
-  .action(() => {
-    runSessions(process.cwd());
+  .option("--json", "output machine-readable JSON", false)
+  .action((opts: { json?: boolean }) => {
+    runSessions(process.cwd(), opts);
   });
 
 program
@@ -61,8 +63,17 @@ program
 program
   .command("score [session-id]")
   .description("recompute and display score for a session (default: latest)")
-  .action((sessionId?: string) => {
-    runScore(process.cwd(), sessionId);
+  .option("--json", "output machine-readable JSON", false)
+  .action((sessionId: string | undefined, opts: { json?: boolean }) => {
+    runScore(process.cwd(), sessionId, opts);
+  });
+
+program
+  .command("stats")
+  .description("aggregate stats across all recorded sessions")
+  .option("--json", "output machine-readable JSON", false)
+  .action((opts: { json?: boolean }) => {
+    runStats(process.cwd(), opts);
   });
 
 // Placeholder commands wired in later phases. Declared now so `--help` shows

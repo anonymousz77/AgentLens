@@ -10,12 +10,27 @@ import { loadScoringConfig } from "../config";
 import { computeScore } from "../scoring/score";
 import { detectRegressions } from "../scoring/regressions";
 import { printScoreReport } from "../scoring/format";
+import { getSessionDetail } from "../api/read";
 
-export function runScore(cwd: string, sessionId?: string): void {
+export function runScore(cwd: string, sessionId?: string, opts: { json?: boolean } = {}): void {
   if (!isInitialized(cwd)) {
     throw new Error(
       "AgentLens is not initialized here. Run `agentlens init` first."
     );
+  }
+
+  if (opts.json) {
+    const detail = getSessionDetail(cwd, sessionId);
+    if (detail === null) {
+      if (sessionId !== undefined) {
+        throw new Error(`Session not found: ${sessionId}`);
+      }
+      throw new Error(
+        "No sessions recorded yet. Run `agentlens session start` first."
+      );
+    }
+    process.stdout.write(JSON.stringify(detail, null, 2) + "\n");
+    return;
   }
 
   const db = openDatabase(cwd);

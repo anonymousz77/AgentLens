@@ -1,6 +1,7 @@
 import pc from "picocolors";
 import { isInitialized, openDatabase } from "../db/database";
 import { listSessions, SessionListRow } from "../db/sessions";
+import { listSessionsSummary } from "../api/read";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -28,11 +29,17 @@ function formatStats(row: SessionListRow): string {
   );
 }
 
-export function runSessions(cwd: string): void {
+export function runSessions(cwd: string, opts: { json?: boolean } = {}): void {
   if (!isInitialized(cwd)) {
     throw new Error(
       "AgentLens is not initialized here. Run `agentlens init` first."
     );
+  }
+
+  if (opts.json) {
+    const summaries = listSessionsSummary(cwd);
+    process.stdout.write(JSON.stringify(summaries, null, 2) + "\n");
+    return;
   }
 
   const db = openDatabase(cwd);

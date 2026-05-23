@@ -8,7 +8,8 @@
       "Bash(Get-ChildItem *2)",
       "Bash(xargs grep -l \"scoring\\\\|score\\\\|regression\")",
       "Bash(npm run *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }
