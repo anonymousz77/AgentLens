@@ -85,10 +85,22 @@ export interface CostConfig {
   usd_per_million_tokens: number; // blended rate (input+output mix)
 }
 
+/**
+ * LLM judge configuration. Off by default (provider: "none").
+ * The judge scores qualitative dimensions and is stored separately from the
+ * deterministic 0-100 score — never blended until calibration validates reliability.
+ */
+export interface JudgeConfig {
+  provider: "none" | "anthropic" | "local" | "mock";
+  model: string;
+  baseURL: string | null;
+}
+
 export interface AgentLensConfig {
   version: number;
   scoring: ScoringConfig;
   cost: CostConfig;
+  judge: JudgeConfig;
 }
 
 export const DEFAULT_CONFIG: AgentLensConfig = {
@@ -106,5 +118,10 @@ export const DEFAULT_CONFIG: AgentLensConfig = {
     tokens_per_line: 8,
     base_overhead: 200,
     usd_per_million_tokens: 3,
+  },
+  judge: {
+    provider: "none",
+    model: "claude-haiku-4-5-20251001",
+    baseURL: null,
   },
 };

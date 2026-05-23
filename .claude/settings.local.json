@@ -10,7 +10,11 @@
       "Bash(npm run *)",
       "Bash(npm test *)",
       "Bash(Select-Object FullName)",
-      "Bash(Select-Object Name, FullName)"
+      "Bash(Select-Object Name, FullName)",
+      "Bash(Select-Object -First 50)",
+      "Bash(Format-List FullName)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

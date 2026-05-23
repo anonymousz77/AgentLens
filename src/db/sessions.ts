@@ -5,6 +5,7 @@ import type {
   CheckKind,
   CheckPhase,
   Diff,
+  JudgeScore,
   Regression,
   RegressionSeverity,
   Session,
@@ -228,4 +229,40 @@ export function getRegressionsBySession(
       "SELECT * FROM regressions WHERE session_id = ? ORDER BY severity, description"
     )
     .all(sessionId) as Regression[];
+}
+
+export interface InsertJudgeScoreParams {
+  session_id: string;
+  dimension: string;
+  score: number;
+  confidence: number;
+  rationale: string | null;
+}
+
+export function insertJudgeScore(
+  db: Database.Database,
+  params: InsertJudgeScoreParams
+): string {
+  const id = crypto.randomUUID();
+  db.prepare(
+    "INSERT INTO judge_scores (id, session_id, dimension, score, confidence, rationale) " +
+      "VALUES (?, ?, ?, ?, ?, ?)"
+  ).run(
+    id,
+    params.session_id,
+    params.dimension,
+    params.score,
+    params.confidence,
+    params.rationale
+  );
+  return id;
+}
+
+export function getJudgeScoresBySession(
+  db: Database.Database,
+  sessionId: string
+): JudgeScore[] {
+  return db
+    .prepare("SELECT * FROM judge_scores WHERE session_id = ?")
+    .all(sessionId) as JudgeScore[];
 }

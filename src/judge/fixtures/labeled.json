@@ -1,0 +1,104 @@
+[
+  {
+    "id": "clean-focused-fix",
+    "diffPatch": "diff --git a/src/utils/parse.ts b/src/utils/parse.ts\nindex 1a2b3c4..5d6e7f8 100644\n--- a/src/utils/parse.ts\n+++ b/src/utils/parse.ts\n@@ -14,8 +14,8 @@ export function parseTimestamp(raw: string): Date | null {\n-  const parts = raw.split(\"T\");\n-  if (!parts[0]) return null;\n-  const date = parts[0];\n-  const time = parts[1] ?? \"00:00:00Z\";\n+  const [datePart, timePart] = raw.split(\"T\");\n+  if (!datePart) return null;\n+  const date = datePart;\n+  const time = timePart ?? \"00:00:00Z\";\n   return new Date(date + \"T\" + time);\n }",
+    "task": null,
+    "humanScores": {
+      "readability": 88,
+      "scope_discipline": 93
+    },
+    "notes": "Tiny refactor: destructuring makes intent clearer; single function in single file; zero scope creep. High on both dimensions."
+  },
+  {
+    "id": "sloppy-naming",
+    "diffPatch": "diff --git a/src/auth/validate.ts b/src/auth/validate.ts\nindex aabbcc..ddeeff 100644\n--- a/src/auth/validate.ts\n+++ b/src/auth/validate.ts\n@@ -5,12 +5,14 @@ export function checkUser(d: any): boolean {\n-  const x = d.split(\"@\");\n-  if (x.length !== 2) return false;\n-  const y = x[1].split(\".\");\n-  return y.length >= 2;\n+  const tmp = d.toString();\n+  const p = tmp.split(\"@\");\n+  if (p.length !== 2) return false;\n+  const q = p[1] ?? \"\";\n+  const r = q.split(\".\");\n+  if (r.length < 2) return false;\n+  const last = r[r.length - 1] ?? \"\";\n+  return last.length > 0;\n }",
+    "task": null,
+    "humanScores": {
+      "readability": 22,
+      "scope_discipline": 82
+    },
+    "notes": "Single-file change (good scope), but variable names x/y/tmp/p/q/r are completely opaque. Readability is very poor."
+  },
+  {
+    "id": "scope-creep",
+    "diffPatch": "diff --git a/src/api/users.ts b/src/api/users.ts\nindex 111..222 100644\n--- a/src/api/users.ts\n+++ b/src/api/users.ts\n@@ -8,3 +8,4 @@ export function getUser(id: string) {\n+  logger.info(`getUser called: ${id}`);\n   return db.find(id);\n }\ndiff --git a/src/api/posts.ts b/src/api/posts.ts\nindex 333..444 100644\n--- a/src/api/posts.ts\n+++ b/src/api/posts.ts\n@@ -12,3 +12,4 @@ export function getPosts(userId: string) {\n+  logger.info(`getPosts called: ${userId}`);\n   return db.findAll(userId);\n }\ndiff --git a/src/api/comments.ts b/src/api/comments.ts\nindex 555..666 100644\n--- a/src/api/comments.ts\n+++ b/src/api/comments.ts\n@@ -5,3 +5,4 @@ export function getComments(postId: string) {\n+  logger.info(`getComments called: ${postId}`);\n   return db.findComments(postId);\n }\ndiff --git a/src/utils/cache.ts b/src/utils/cache.ts\nindex 777..888 100644\n--- a/src/utils/cache.ts\n+++ b/src/utils/cache.ts\n@@ -20,3 +20,6 @@ export class Cache {\n+  invalidateAll(): void {\n+    this.store.clear();\n+  }\n }\ndiff --git a/src/config.ts b/src/config.ts\nindex 999..aaa 100644\n--- a/src/config.ts\n+++ b/src/config.ts\n@@ -3,2 +3,3 @@ export const config = {\n+  logLevel: process.env.LOG_LEVEL ?? \"info\",\n };",
+    "task": null,
+    "humanScores": {
+      "readability": 76,
+      "scope_discipline": 16
+    },
+    "notes": "Each individual change is readable. But 5 files changed to add logging — should have been 1 commit per concern, or a logging config change shouldn't touch API handlers. Major scope creep."
+  },
+  {
+    "id": "large-messy-refactor",
+    "diffPatch": "diff --git a/src/core/engine.ts b/src/core/engine.ts\nindex 001..002 100644\n--- a/src/core/engine.ts\n+++ b/src/core/engine.ts\n@@ -1,40 +1,52 @@\n-export class Engine {\n-  private data: any[] = [];\n-  run(input: any) {\n-    let r = null;\n-    for (let i = 0; i < this.data.length; i++) {\n-      const x = this.data[i];\n-      if (x && x.id === input.id) { r = x; break; }\n-    }\n-    if (!r) { this.data.push(input); r = input; }\n-    return this.process(r);\n-  }\n-  process(item: any) {\n-    const res: any = {};\n-    Object.keys(item).forEach(k => { res[k] = item[k]; });\n-    res.ts = Date.now();\n-    return res;\n+// refactored\n+export class NewEngine {\n+  private items = new Map();\n+  private cfg: any;\n+  constructor(cfg?: any) { this.cfg = cfg || {}; }\n+  execute(inp: any) {\n+    const key = inp?.id ?? Math.random();\n+    if (!this.items.has(key)) this.items.set(key, inp);\n+    const it = this.items.get(key);\n+    return this._proc(it);\n   }\n+  _proc(i: any) {\n+    let o: any = {};\n+    for (const k in i) { if (i.hasOwnProperty(k)) o[k] = i[k]; }\n+    o.timestamp = Date.now(); o.cfg = this.cfg;\n+    return o;\n+  }\n+  reset() { this.items = new Map(); }\n }\n+export const defaultEngine = new NewEngine();\ndiff --git a/src/core/types.ts b/src/core/types.ts\nindex 003..004 100644\n--- a/src/core/types.ts\n+++ b/src/core/types.ts\n@@ -5,4 +5,7 @@\n-export interface Item { id: string; name: string; }\n+export interface Item { id: string; name: string; meta?: Record<string, unknown>; }\n+export interface EngineConfig { debug?: boolean; timeout?: number; }\n+export type ProcessResult = Record<string, unknown>;\ndiff --git a/src/index.ts b/src/index.ts\nindex 005..006 100644\n--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,3 +1,5 @@\n-import { Engine } from \"./core/engine\";\n-export { Engine };\n+import { NewEngine, defaultEngine } from \"./core/engine\";\n+export { NewEngine as Engine, defaultEngine };\n+export * from \"./core/types\";",
+    "task": null,
+    "humanScores": {
+      "readability": 28,
+      "scope_discipline": 24
+    },
+    "notes": "Multiple files changed. New code uses 'any', single-letter vars (i, o, k), underscore-prefixed method (_proc), and mixes concerns. Old naming was actually cleaner. Renames public API (Engine -> NewEngine) — breaking change snuck in. Very poor on both dimensions."
+  },
+  {
+    "id": "perfect-small-change",
+    "diffPatch": "diff --git a/src/utils/math.ts b/src/utils/math.ts\nindex aaa..bbb 100644\n--- a/src/utils/math.ts\n+++ b/src/utils/math.ts\n@@ -18,3 +18,4 @@ export function clamp(value: number, min: number, max: number): number {\n-  return Math.min(max, Math.max(min, value));\n+  if (min > max) throw new RangeError(`clamp: min (${min}) must not exceed max (${max})`);\n+  return Math.min(max, Math.max(min, value));\n }",
+    "task": null,
+    "humanScores": {
+      "readability": 96,
+      "scope_discipline": 98
+    },
+    "notes": "One-line guard added with a clear, descriptive error message. Single function, single file. Exactly what the function needed. Exemplary on both dimensions."
+  },
+  {
+    "id": "medium-quality",
+    "diffPatch": "diff --git a/src/services/email.ts b/src/services/email.ts\nindex ccc..ddd 100644\n--- a/src/services/email.ts\n+++ b/src/services/email.ts\n@@ -10,15 +10,20 @@ export class EmailService {\n-  send(to: string, subject: string, body: string): void {\n-    if (!to || !subject) return;\n-    this.transport.send({ to, subject, html: body });\n+  async send(to: string, subject: string, body: string): Promise<void> {\n+    if (!to) throw new Error(\"to is required\");\n+    if (!subject) throw new Error(\"subject is required\");\n+    // send it\n+    try {\n+      await this.transport.send({ to, subject, html: body });\n+    } catch (err) {\n+      console.error(\"email send failed\", err);\n+    }\n   }\n }",
+    "task": null,
+    "humanScores": {
+      "readability": 61,
+      "scope_discipline": 68
+    },
+    "notes": "Improved to async, added guards. But the 'send it' comment adds no value, silently swallowing errors (console.error then no rethrow) is a hidden trap, and changing void->Promise is a silent API break. Mediocre — not wrong enough to flag, not clean enough to praise."
+  },
+  {
+    "id": "task-match-good",
+    "diffPatch": "diff --git a/src/api/register.ts b/src/api/register.ts\nindex eee..fff 100644\n--- a/src/api/register.ts\n+++ b/src/api/register.ts\n@@ -4,8 +4,17 @@ export async function registerUser(req: Request, res: Response) {\n-  const { username, password } = req.body;\n-  if (!username || !password) {\n-    return res.status(400).json({ error: \"Missing fields\" });\n+  const { username, password, email } = req.body;\n+  if (!username || !password || !email) {\n+    return res.status(400).json({ error: \"username, password, and email are required\" });\n   }\n+\n+  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n+  if (!emailRegex.test(email)) {\n+    return res.status(400).json({ error: \"Invalid email address\" });\n+  }\n+\n   const user = await db.users.create({ username, password });\n+  user.email = email;\n+  await db.users.update(user);\n   return res.status(201).json({ id: user.id });\n }",
+    "task": "Add email validation to the user registration endpoint",
+    "humanScores": {
+      "readability": 80,
+      "scope_discipline": 84,
+      "task_match": 91
+    },
+    "notes": "Diff directly implements the stated task: adds email field, validates format, stores it. Readable code with a clear regex. Scope is well-contained to the registration handler. Minor issue: separate update call instead of passing email to create(), but task is clearly fulfilled."
+  },
+  {
+    "id": "task-match-poor",
+    "diffPatch": "diff --git a/src/auth/session.ts b/src/auth/session.ts\nindex ggg..hhh 100644\n--- a/src/auth/session.ts\n+++ b/src/auth/session.ts\n@@ -8,6 +8,11 @@ export class SessionManager {\n-  create(userId: string): string {\n-    const token = generateToken();\n-    this.store.set(token, userId);\n-    return token;\n+  create(userId: string, email: string): string {\n+    const token = generateToken();\n+    this.emailIndex.set(email, token);\n+    this.store.set(token, { userId, email });\n+    return token;\n   }\n+\n+  findByEmail(email: string): string | undefined {\n+    return this.emailIndex.get(email);\n+  }\n }",
+    "task": "Fix the session timeout bug where inactive sessions are not expiring",
+    "humanScores": {
+      "readability": 72,
+      "scope_discipline": 74,
+      "task_match": 8
+    },
+    "notes": "The diff is readable and scoped. But it adds email indexing to sessions — completely unrelated to the stated task of fixing session timeout. task_match is very low: the diff addresses an entirely different concern."
+  },
+  {
+    "id": "readable-refactor",
+    "diffPatch": "diff --git a/src/scoring/score.ts b/src/scoring/score.ts\nindex iii..jjj 100644\n--- a/src/scoring/score.ts\n+++ b/src/scoring/score.ts\n@@ -15,22 +15,26 @@ export function computeScore(checks: CheckDelta[], config: ScoringConfig): number {\n-  let score = config.base_score;\n-  let p = 0;\n-  for (let i = 0; i < checks.length; i++) {\n-    const c = checks[i];\n-    if (c.kind === \"test\") {\n-      p += c.regressedCount * config.test_regression_penalty;\n-      p += c.newFailureCount * config.new_failure_penalty;\n-    } else if (c.kind === \"type\") {\n-      p += Math.max(0, c.delta) * config.type_error_delta_weight;\n-    } else if (c.kind === \"lint\") {\n-      p += Math.max(0, c.delta) * config.lint_error_delta_weight;\n-    }\n-  }\n-  return Math.max(0, Math.min(100, score - p));\n+  let penalty = 0;\n+\n+  for (const check of checks) {\n+    if (check.kind === \"test\") {\n+      penalty += check.regressedCount * config.test_regression_penalty;\n+      penalty += check.newFailureCount * config.new_failure_penalty;\n+    } else if (check.kind === \"type\") {\n+      penalty += Math.max(0, check.delta) * config.type_error_delta_weight;\n+    } else if (check.kind === \"lint\") {\n+      penalty += Math.max(0, check.delta) * config.lint_error_delta_weight;\n+    }\n+  }\n+\n+  return Math.max(0, Math.min(100, config.base_score - penalty));\n }",
+    "task": null,
+    "humanScores": {
+      "readability": 86,
+      "scope_discipline": 81
+    },
+    "notes": "Single-file refactor: replaced index loop with for-of, renamed terse 'p' to 'penalty', inlined base_score. Much clearer. Scope is well-contained. Minor deduction: the change touches a core function but is purely cosmetic — no test update needed but a changelog note would be nice."
+  },
+  {
+    "id": "over-engineered",
+    "diffPatch": "diff --git a/src/utils/format.ts b/src/utils/format.ts\nindex kkk..lll 100644\n--- a/src/utils/format.ts\n+++ b/src/utils/format.ts\n@@ -1,5 +1,45 @@\n-export function formatDate(d: Date): string {\n-  return d.toISOString().slice(0, 10);\n+type FormatterStrategy = (d: Date) => string;\n+\n+interface FormatterOptions {\n+  strategy?: FormatterStrategy;\n+  locale?: string;\n+  timezone?: string;\n+  fallback?: string;\n+}\n+\n+class DateFormatterFactory {\n+  private static instance: DateFormatterFactory;\n+  private strategies = new Map<string, FormatterStrategy>();\n+\n+  private constructor() {\n+    this.strategies.set(\"iso\", (d) => d.toISOString().slice(0, 10));\n+    this.strategies.set(\"locale\", (d) => d.toLocaleDateString());\n+  }\n+\n+  static getInstance(): DateFormatterFactory {\n+    if (!DateFormatterFactory.instance) {\n+      DateFormatterFactory.instance = new DateFormatterFactory();\n+    }\n+    return DateFormatterFactory.instance;\n+  }\n+\n+  register(name: string, strategy: FormatterStrategy): void {\n+    this.strategies.set(name, strategy);\n+  }\n+\n+  format(d: Date, opts: FormatterOptions = {}): string {\n+    const strategyName = opts.strategy ? \"custom\" : \"iso\";\n+    const fn = opts.strategy ?? this.strategies.get(strategyName);\n+    if (!fn) return opts.fallback ?? \"\";\n+    return fn(d);\n+  }\n+}\n+\n+export const dateFormatterFactory = DateFormatterFactory.getInstance();\n+\n+export function formatDate(d: Date, opts?: FormatterOptions): string {\n+  return dateFormatterFactory.format(d, opts);\n }",
+    "task": null,
+    "humanScores": {
+      "readability": 34,
+      "scope_discipline": 55
+    },
+    "notes": "Replaced a one-liner with a 40-line Singleton + Strategy pattern for date formatting. Massive over-engineering for zero gain. The new public API is harder to discover. Scope is single-file but the change leaks an unnecessary singleton globally. Readability suffers because the abstraction obscures what is fundamentally `d.toISOString().slice(0,10)`."
+  }
+]

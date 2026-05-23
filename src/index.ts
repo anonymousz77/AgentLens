@@ -9,6 +9,7 @@ import { runScore } from "./commands/score";
 import { runStats } from "./commands/stats";
 import { runDashboard } from "./commands/dashboard";
 import { runWatch } from "./commands/watch";
+import { runJudge, runJudgeCalibrate } from "./commands/judge";
 
 const program = new Command();
 
@@ -89,6 +90,32 @@ program
       quiet: opts.quiet ? parseInt(opts.quiet, 10) : undefined,
     }).catch((err: unknown) => {
       console.error(pc.red("agentlens watch: " + String(err)));
+      process.exit(1);
+    });
+  });
+
+const judgeCmd = program
+  .command("judge")
+  .description(
+    "run the LLM judge on a session diff (qualitative scores — separate from deterministic score)"
+  )
+  .argument("[session-id]", "session to judge (default: latest)")
+  .option("--task <description>", "task description — activates task_match scoring dimension")
+  .action((sessionId: string | undefined, opts: { task?: string }) => {
+    runJudge(process.cwd(), sessionId, opts).catch((err: unknown) => {
+      console.error(pc.red("agentlens judge: " + String(err)));
+      process.exit(1);
+    });
+  });
+
+judgeCmd
+  .command("calibrate")
+  .description(
+    "measure judge reliability against hand-labeled fixtures (runs offline with MockProvider if no provider configured)"
+  )
+  .action(() => {
+    runJudgeCalibrate(process.cwd()).catch((err: unknown) => {
+      console.error(pc.red("agentlens judge calibrate: " + String(err)));
       process.exit(1);
     });
   });

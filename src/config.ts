@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DEFAULT_CONFIG } from "./types";
-import type { CostConfig, ScoringConfig } from "./types";
+import type { CostConfig, JudgeConfig, ScoringConfig } from "./types";
 
 export function loadScoringConfig(repoRoot: string): ScoringConfig {
   const configPath = path.join(repoRoot, ".agentlens", "config.json");
@@ -77,5 +77,53 @@ export function loadCostConfig(repoRoot: string): CostConfig {
     return result;
   } catch {
     return { ...DEFAULT_CONFIG.cost };
+  }
+}
+
+export function loadJudgeConfig(repoRoot: string): JudgeConfig {
+  const configPath = path.join(repoRoot, ".agentlens", "config.json");
+
+  if (!fs.existsSync(configPath)) {
+    return { ...DEFAULT_CONFIG.judge };
+  }
+
+  try {
+    const raw = fs.readFileSync(configPath, "utf8");
+    const parsed: unknown = JSON.parse(raw);
+
+    if (typeof parsed !== "object" || parsed === null) {
+      return { ...DEFAULT_CONFIG.judge };
+    }
+
+    const judgeOverride = (parsed as Record<string, unknown>)["judge"];
+
+    if (typeof judgeOverride !== "object" || judgeOverride === null) {
+      return { ...DEFAULT_CONFIG.judge };
+    }
+
+    const override = judgeOverride as Record<string, unknown>;
+    const result: JudgeConfig = { ...DEFAULT_CONFIG.judge };
+
+    const providerVal = override["provider"];
+    const validProviders = ["none", "anthropic", "local", "mock"] as const;
+    if (typeof providerVal === "string" && (validProviders as readonly string[]).includes(providerVal)) {
+      result.provider = providerVal as JudgeConfig["provider"];
+    }
+
+    const modelVal = override["model"];
+    if (typeof modelVal === "string" && modelVal.length > 0) {
+      result.model = modelVal;
+    }
+
+    const baseURLVal = override["baseURL"];
+    if (typeof baseURLVal === "string") {
+      result.baseURL = baseURLVal;
+    } else if (baseURLVal === null) {
+      result.baseURL = null;
+    }
+
+    return result;
+  } catch {
+    return { ...DEFAULT_CONFIG.judge };
   }
 }

@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc && npm run build:dashboard",
-    "build:cli": "tsc",
+    "build:cli": "tsc && node -e \"require('node:fs').cpSync('src/judge/fixtures','dist/judge/fixtures',{recursive:true})\"",
     "build:dashboard": "cd dashboard && npm install --prefer-offline && npm run build",
     "typecheck": "tsc --noEmit && cd dashboard && npx tsc --noEmit",
     "start": "node dist/index.js",
@@ -34,6 +34,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
     "better-sqlite3": "^11.8.1",
     "chokidar": "^3.6.0",
     "commander": "^12.1.0",
