@@ -1,30 +1,13 @@
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import pc from "picocolors";
 import { agentlensDir, isInitialized, openDatabase } from "../db/database";
-import { computeDiff } from "../git/diff";
-import { assertGitRepo, takeSnapshot } from "../git/snapshot";
-import {
-  insertDiff,
-  insertSession,
-  updateSession,
-  insertCheck,
-  getChecksByPhase,
-  getDiff,
-  insertRegression,
-  updateSessionScore,
-} from "../db/sessions";
-import { loadScoringConfig } from "../config";
-import { computeScore } from "../scoring/score";
-import { detectRegressions } from "../scoring/regressions";
+import { assertGitRepo } from "../git/snapshot";
+import { captureBaseline, finalizeSession } from "../pipeline";
+import { getChecksByPhase } from "../db/sessions";
 import { printScoreReport } from "../scoring/format";
-import { detectChecks } from "../checks/detect";
-import { runCommand } from "../checks/run";
-import { selectParsers } from "../checks/parsers/index";
-import type { Check, CheckPhase } from "../types";
-import type { ParseResult } from "../checks/parsers/types";
-import Database from "better-sqlite3";
+import type { Check } from "../types";
+import type { BaselineHandle } from "../pipeline";
 
 export interface SessionStartOptions {
   agent?: string;
@@ -42,68 +25,6 @@ function activePath(repoRoot: string): string {
 
 function shortId(id: string): string {
   return id.substring(0, 8);
-}
-
-function currentHead(repoRoot: string): string {
-  return execFileSync("git", ["rev-parse", "HEAD"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    stdio: ["pipe", "pipe", "pipe"],
-  }).trim();
-}
-
-function runAndStoreChecks(
-  db: Database.Database,
-  sessionId: string,
-  cwd: string,
-  phase: CheckPhase
-): string[] {
-  const detected = detectChecks(cwd);
-  const summaryLines: string[] = [];
-  const parsers = selectParsers(detected.ecosystem);
-
-  const tasks: Array<{
-    kind: "test" | "type" | "lint";
-    spec: NonNullable<ReturnType<typeof detectChecks>["test"]>;
-    parse: (output: string, exitCode: number) => ParseResult;
-  }> = [];
-
-  if (detected.test) tasks.push({ kind: "test", spec: detected.test, parse: parsers.test });
-  if (detected.type) tasks.push({ kind: "type", spec: detected.type, parse: parsers.type });
-  if (detected.lint) tasks.push({ kind: "lint", spec: detected.lint, parse: parsers.lint });
-
-  for (const task of tasks) {
-    try {
-      const res = runCommand(task.spec, cwd);
-      const r = task.parse(res.output, res.exitCode);
-      insertCheck(db, {
-        session_id: sessionId,
-        kind: task.kind,
-        phase,
-        passed: r.passed,
-        failed: r.failed,
-        total: r.total,
-        coverage_pct: r.coverage_pct ?? null,
-        runtime_ms: res.runtime_ms,
-        raw_output: res.output,
-      });
-
-      if (task.kind === "test") {
-        summaryLines.push(`tests: ${r.passed}/${r.total}`);
-        if (r.coverage_pct !== null) {
-          summaryLines.push(`coverage: ${r.coverage_pct.toFixed(1)}%`);
-        }
-      } else if (task.kind === "type") {
-        summaryLines.push(`type errors: ${r.failed}`);
-      } else {
-        summaryLines.push(`lint errors: ${r.failed}`);
-      }
-    } catch (e) {
-      console.warn(pc.yellow(`  ⚠ ${task.kind} check failed: ${String(e)}`));
-    }
-  }
-
-  return summaryLines;
 }
 
 function printDeltas(baseline: Check[], final: Check[]): void {
@@ -174,26 +95,32 @@ export function runSessionStart(
     );
   }
 
-  const s0Sha = takeSnapshot(cwd);
-  const headSha = currentHead(cwd);
-
+  console.log(pc.dim("  running baseline checks..."));
   const db = openDatabase(cwd);
-  const sessionId = insertSession(db, {
-    repo_path: cwd,
-    agent_name: opts.agent ?? null,
-    git_base_sha: headSha,
+  const handle: BaselineHandle = captureBaseline(cwd, db, {
+    agentName: opts.agent ?? null,
     notes: opts.notes ?? null,
   });
 
-  console.log(pc.dim("  running baseline checks..."));
-  const summary = runAndStoreChecks(db, sessionId, cwd, "baseline");
+  const baselineChecks = getChecksByPhase(db, handle.sessionId, "baseline");
   db.close();
 
-  const payload: ActiveSession = { sessionId, s0Sha };
+  const summaryLines: string[] = [];
+  const bTest = baselineChecks.find((c) => c.kind === "test");
+  const bType = baselineChecks.find((c) => c.kind === "type");
+  const bLint = baselineChecks.find((c) => c.kind === "lint");
+  if (bTest) {
+    summaryLines.push(`tests: ${bTest.passed}/${bTest.total}`);
+    if (bTest.coverage_pct !== null) summaryLines.push(`coverage: ${bTest.coverage_pct.toFixed(1)}%`);
+  }
+  if (bType) summaryLines.push(`type errors: ${bType.failed}`);
+  if (bLint) summaryLines.push(`lint errors: ${bLint.failed}`);
+
+  const payload: ActiveSession = { sessionId: handle.sessionId, s0Sha: handle.s0Sha };
   fs.writeFileSync(active, JSON.stringify(payload, null, 2) + "\n");
 
-  const sid = pc.cyan("#" + shortId(sessionId));
-  const baselineSummary = summary.length > 0 ? " " + summary.join(", ") : "";
+  const sid = pc.cyan("#" + shortId(handle.sessionId));
+  const baselineSummary = summaryLines.length > 0 ? " " + summaryLines.join(", ") : "";
   console.log(
     pc.green(pc.bold("✓")) +
       " Session " +
@@ -220,62 +147,15 @@ export function runSessionEnd(cwd: string): void {
   const raw = fs.readFileSync(active, "utf8");
   const { sessionId, s0Sha } = JSON.parse(raw) as ActiveSession;
 
-  const s1Sha = takeSnapshot(cwd);
-  const { filesChanged, linesAdded, linesRemoved, patch } = computeDiff(
-    cwd,
-    s0Sha,
-    s1Sha
-  );
-  const headSha = currentHead(cwd);
-  const endedAt = new Date().toISOString();
-
-  const db = openDatabase(cwd);
-
   console.log(pc.dim("  running final checks..."));
-  runAndStoreChecks(db, sessionId, cwd, "final");
-
-  db.transaction(() => {
-    updateSession(db, { id: sessionId, ended_at: endedAt, git_head_sha: headSha });
-    insertDiff(db, {
-      session_id: sessionId,
-      files_changed: filesChanged,
-      lines_added: linesAdded,
-      lines_removed: linesRemoved,
-      patch,
-    });
-  })();
-
-  const baseline = getChecksByPhase(db, sessionId, "baseline");
-  const final = getChecksByPhase(db, sessionId, "final");
-  const diff = getDiff(db, sessionId);
-
-  const config = loadScoringConfig(cwd);
-  const scoreResult = computeScore({ baseline, final }, config);
-  const regressions = detectRegressions(
-    baseline,
-    final,
-    diff?.patch ?? ""
-  );
-
-  db.transaction(() => {
-    updateSessionScore(db, sessionId, scoreResult.score);
-    for (const reg of regressions) {
-      insertRegression(db, {
-        session_id: sessionId,
-        description: reg.description,
-        file: reg.file,
-        hunk: reg.hunk,
-        severity: reg.severity,
-      });
-    }
-  })();
-
+  const db = openDatabase(cwd);
+  const result = finalizeSession(cwd, db, { sessionId, s0Sha });
   db.close();
 
   fs.unlinkSync(active);
 
   const sid = pc.cyan("#" + shortId(sessionId));
-  if (filesChanged === 0) {
+  if (result.filesChanged === 0) {
     console.log(
       pc.yellow("⚠") + " Session " + sid + " ended with no changes."
     );
@@ -285,14 +165,14 @@ export function runSessionEnd(cwd: string): void {
         " Session " +
         sid +
         " ended. " +
-        pc.bold(String(filesChanged)) +
+        pc.bold(String(result.filesChanged)) +
         " file(s) changed, " +
-        pc.green("+" + String(linesAdded)) +
+        pc.green("+" + String(result.linesAdded)) +
         " / " +
-        pc.red("-" + String(linesRemoved))
+        pc.red("-" + String(result.linesRemoved))
     );
   }
 
-  printDeltas(baseline, final);
-  printScoreReport(scoreResult, regressions);
+  printDeltas(result.baseline, result.final);
+  printScoreReport(result.scoreResult, result.regressions);
 }

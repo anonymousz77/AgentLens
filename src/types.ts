@@ -75,9 +75,20 @@ export interface ScoringConfig {
   lint_error_delta_weight: number; // points per lint error added/removed
 }
 
+/**
+ * Cost estimation parameters. Used to produce a transparent diff-based estimate.
+ * Real per-agent token tracking is a Phase 7 adapter concern.
+ */
+export interface CostConfig {
+  tokens_per_line: number; // estimated tokens per changed line
+  base_overhead: number; // minimum tokens charged per session (context/prompt overhead)
+  usd_per_million_tokens: number; // blended rate (input+output mix)
+}
+
 export interface AgentLensConfig {
   version: number;
   scoring: ScoringConfig;
+  cost: CostConfig;
 }
 
 export const DEFAULT_CONFIG: AgentLensConfig = {
@@ -90,5 +101,10 @@ export const DEFAULT_CONFIG: AgentLensConfig = {
     coverage_delta_weight: 0.5,
     type_error_delta_weight: 3,
     lint_error_delta_weight: 1,
+  },
+  cost: {
+    tokens_per_line: 8,
+    base_overhead: 200,
+    usd_per_million_tokens: 3,
   },
 };

@@ -4,6 +4,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+export function currentHead(repoRoot: string): string {
+  return execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  }).trim();
+}
+
 export function assertGitRepo(repoRoot: string): void {
   try {
     execFileSync("git", ["rev-parse", "--git-dir"], {

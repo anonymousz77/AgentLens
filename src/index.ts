@@ -8,6 +8,7 @@ import { runCheck } from "./commands/check";
 import { runScore } from "./commands/score";
 import { runStats } from "./commands/stats";
 import { runDashboard } from "./commands/dashboard";
+import { runWatch } from "./commands/watch";
 
 const program = new Command();
 
@@ -77,13 +78,19 @@ program
     runStats(process.cwd(), opts);
   });
 
-// Placeholder commands wired in later phases. Declared now so `--help` shows
-// the roadmap and so the surface area is stable.
 program
   .command("watch")
-  .description("[coming soon] monitor an agent session and score it")
-  .action(() => {
-    console.log(pc.dim("`agentlens watch` lands in Phase 5. Not implemented yet."));
+  .description("watch the repo and auto-record sessions when an agent works")
+  .option("--agent <name>", "name of the agent (e.g. claude-code)")
+  .option("--quiet <seconds>", "quiet period before session close (default: 45)", "45")
+  .action((opts: { agent?: string; quiet?: string }) => {
+    runWatch(process.cwd(), {
+      agent: opts.agent,
+      quiet: opts.quiet ? parseInt(opts.quiet, 10) : undefined,
+    }).catch((err: unknown) => {
+      console.error(pc.red("agentlens watch: " + String(err)));
+      process.exit(1);
+    });
   });
 
 program

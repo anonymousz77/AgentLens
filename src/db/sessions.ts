@@ -191,6 +191,17 @@ export function updateSessionScore(
   db.prepare("UPDATE sessions SET score = ? WHERE id = ?").run(score, sessionId);
 }
 
+export function updateSessionCost(
+  db: Database.Database,
+  sessionId: string,
+  tokens: number,
+  cost_usd: number
+): void {
+  db
+    .prepare("UPDATE sessions SET tokens = ?, cost_usd = ? WHERE id = ?")
+    .run(tokens, cost_usd, sessionId);
+}
+
 export function getSessionById(
   db: Database.Database,
   id: string
