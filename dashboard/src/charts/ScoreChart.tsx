@@ -1,7 +1,7 @@
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -26,13 +26,15 @@ function CustomTooltip({ active, payload, label }: any) {
     <div
       className="rounded px-3 py-2 text-sm"
       style={{
-        background: "var(--bg-raised)",
-        border: "1px solid var(--border)",
+        background: "rgba(14,16,20,0.85)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.55)",
         fontFamily: "JetBrains Mono, monospace",
         fontSize: "12px",
       }}
     >
-      <p style={{ color: "var(--text-muted)" }}>{formatDate(label as string)}</p>
+      <p style={{ color: "var(--text-muted)", marginBottom: "2px" }}>{formatDate(label as string)}</p>
       <p style={{ color: scoreColor(score) }}>Score: {score ?? "—"}</p>
     </div>
   );
@@ -49,8 +51,14 @@ export default function ScoreChart({ data }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-        <CartesianGrid stroke="var(--border)" strokeDasharray="4 2" vertical={false} />
+      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <defs>
+          <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="var(--score-hi)" stopOpacity={0.28} />
+            <stop offset="100%" stopColor="var(--score-hi)" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke="var(--border-muted)" strokeDasharray="4 2" vertical={false} />
         <XAxis
           dataKey="started_at"
           tickFormatter={formatDate}
@@ -65,17 +73,18 @@ export default function ScoreChart({ data }: Props) {
           tickLine={false}
         />
         <Tooltip content={<CustomTooltip />} />
-        <Line
+        <Area
           type="monotone"
           dataKey="score"
           stroke="var(--score-hi)"
-          strokeWidth={1.5}
+          strokeWidth={2}
+          fill="url(#scoreGrad)"
           dot={{ r: 3, fill: "var(--score-hi)", strokeWidth: 0 }}
-          activeDot={{ r: 4, fill: "var(--score-hi)", strokeWidth: 0 }}
+          activeDot={{ r: 5, fill: "var(--score-hi)", strokeWidth: 0 }}
           connectNulls
           isAnimationActive={false}
         />
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

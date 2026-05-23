@@ -64,8 +64,9 @@ function ScatterFallback({ sessions }: { sessions: SessionSummary[] }) {
               return (
                 <div
                   style={{
-                    background: "var(--bg-raised)",
-                    border: "1px solid var(--border)",
+                    background: "rgba(14,16,20,0.85)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid rgba(255,255,255,0.06)",
                     borderRadius: "4px",
                     padding: "6px 10px",
                     fontSize: "11px",
@@ -78,11 +79,7 @@ function ScatterFallback({ sessions }: { sessions: SessionSummary[] }) {
               );
             }}
           />
-          <Scatter
-            data={data}
-            fill="var(--score-hi)"
-            opacity={0.7}
-          />
+          <Scatter data={data} fill="var(--score-hi)" opacity={0.7} />
         </ScatterChart>
       </ResponsiveContainer>
     </div>
@@ -122,12 +119,26 @@ export default function ConstellationScene({ sessions, onSelect }: Props) {
   }
 
   return (
-    <Suspense fallback={<LoadingCanvas />}>
-      <SessionConstellation
-        sessions={sessions}
-        onSelect={onSelect}
-        reducedMotion={reducedMotion}
+    /* Vignette overlay sits above the Canvas */
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <Suspense fallback={<LoadingCanvas />}>
+        <SessionConstellation
+          sessions={sessions}
+          onSelect={onSelect}
+          reducedMotion={reducedMotion}
+        />
+      </Suspense>
+      {/* Cinematic vignette */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "radial-gradient(ellipse 80% 75% at 50% 50%, transparent 35%, #07080a 100%)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+        aria-hidden="true"
       />
-    </Suspense>
+    </div>
   );
 }

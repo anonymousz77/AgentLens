@@ -7,6 +7,7 @@ import { runSessions } from "./commands/sessions";
 import { runCheck } from "./commands/check";
 import { runScore } from "./commands/score";
 import { runStats } from "./commands/stats";
+import { runDashboard } from "./commands/dashboard";
 
 const program = new Command();
 
@@ -87,9 +88,10 @@ program
 
 program
   .command("dashboard")
-  .description("[coming soon] launch the local web dashboard")
-  .action(() => {
-    console.log(pc.dim("`agentlens dashboard` lands in Phase 4. Not implemented yet."));
+  .description("launch the local web dashboard")
+  .option("-p, --port <number>", "port to listen on", String(4319))
+  .action((opts: { port?: string }) => {
+    runDashboard(process.cwd(), { port: opts.port ? parseInt(opts.port, 10) : undefined });
   });
 
 program.parseAsync(process.argv).catch((err) => {

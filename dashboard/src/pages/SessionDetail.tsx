@@ -35,7 +35,15 @@ function AnimatedScore({ score }: { score: number }) {
   const displayed = useAnimatedValue(score);
   const color = scoreColor(score);
   return (
-    <span style={{ color, fontVariantNumeric: "tabular-nums" }}>{displayed}</span>
+    <span
+      style={{
+        color,
+        fontVariantNumeric: "tabular-nums",
+        textShadow: `0 0 48px ${color}cc, 0 0 80px ${color}55`,
+      }}
+    >
+      {displayed}
+    </span>
   );
 }
 
@@ -47,19 +55,19 @@ function formatDate(iso: string) {
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
-  exit: { opacity: 0, transition: { duration: 0.15 } },
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.18 } },
 };
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fetchDetail = useAppStore((s) => s.fetchDetail);
-  const detail = useAppStore((s) => s.detail);
-  const detailId = useAppStore((s) => s.detailId);
-  const loading = useAppStore((s) => s.loading);
-  const error = useAppStore((s) => s.error);
+  const detail    = useAppStore((s) => s.detail);
+  const detailId  = useAppStore((s) => s.detailId);
+  const loading   = useAppStore((s) => s.loading);
+  const error     = useAppStore((s) => s.error);
 
   useEffect(() => {
     if (id) void fetchDetail(id);
@@ -93,6 +101,7 @@ export default function SessionDetail() {
   }
 
   const { session, diff, deltas, regressions, score_breakdown, score } = detail;
+  const heroColor = scoreColor(score);
 
   return (
     <motion.div
@@ -121,23 +130,39 @@ export default function SessionDetail() {
 
           {/* Score hero */}
           <motion.div
-            className="surface p-8 text-center"
+            className="surface p-8 text-center relative overflow-hidden"
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
+            style={{
+              border: `1px solid ${heroColor}30`,
+              background: "linear-gradient(145deg, var(--bg-surface) 0%, var(--bg-overlay) 100%)",
+            }}
           >
-            <p className="label mb-3">Session score</p>
+            {/* Score glow blob behind the number */}
             <div
-              className="font-semibold leading-none"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: `radial-gradient(ellipse 60% 50% at 50% 50%, ${heroColor}18, transparent 72%)`,
+                pointerEvents: "none",
+              }}
+              aria-hidden="true"
+            />
+
+            <p className="label mb-3 relative">Session score</p>
+            <div
+              className="font-semibold leading-none relative"
               style={{
                 fontFamily: "Archivo, sans-serif",
                 fontStretch: "expanded",
+                fontWeight: 900,
                 fontSize: "clamp(80px, 12vw, 112px)",
               }}
             >
               <AnimatedScore score={score} />
             </div>
-            <p className="text-sm mt-3" style={{ color: "var(--text-muted)" }}>
+            <p className="text-sm mt-3 relative" style={{ color: "var(--text-muted)" }}>
               out of 100
             </p>
           </motion.div>
@@ -156,7 +181,7 @@ export default function SessionDetail() {
                     style={{ borderColor: "var(--border-muted)" }}
                     initial={{ opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.08 + i * 0.04 }}
+                    transition={{ delay: 0.1 + i * 0.04 }}
                   >
                     <span className="text-sm" style={{ color: "var(--text-muted)" }}>
                       {item.reason}
@@ -196,7 +221,12 @@ export default function SessionDetail() {
           {regressions.length === 0 && (
             <div
               className="surface px-4 py-3 text-sm"
-              style={{ color: "var(--score-hi)" }}
+              style={{
+                color: "var(--score-hi)",
+                borderLeft: "3px solid var(--score-hi)",
+                borderColor: `var(--border-muted)`,
+                borderLeftColor: "var(--score-hi)",
+              }}
             >
               No regressions detected
             </div>
@@ -211,9 +241,9 @@ export default function SessionDetail() {
             <p className="label">Session metadata</p>
             <dl className="space-y-2 text-sm">
               {([
-                { label: "Agent", value: session.agent_name ?? "unknown", mono: false },
+                { label: "Agent",   value: session.agent_name ?? "unknown", mono: false },
                 { label: "Started", value: formatDate(session.started_at), mono: false },
-                { label: "Ended", value: session.ended_at ? formatDate(session.ended_at) : "ongoing", mono: false },
+                { label: "Ended",   value: session.ended_at ? formatDate(session.ended_at) : "ongoing", mono: false },
                 { label: "Base SHA", value: session.git_base_sha ?? "—", mono: true },
                 { label: "Head SHA", value: session.git_head_sha ?? "—", mono: true },
                 ...(session.cost_usd !== null ? [{ label: "Cost", value: `$${session.cost_usd.toFixed(4)}`, mono: false }] : []),

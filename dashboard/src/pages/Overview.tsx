@@ -43,15 +43,20 @@ function ConstellationFallback() {
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
-  exit: { opacity: 0, transition: { duration: 0.15 } },
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.18 } },
+};
+
+const headingVariants = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.35, delay: 0.05, ease: [0.22, 1, 0.36, 1] } },
 };
 
 export default function Overview() {
   const sessions = useAppStore((s) => s.sessions);
-  const stats = useAppStore((s) => s.stats);
-  const loading = useAppStore((s) => s.loading);
+  const stats    = useAppStore((s) => s.stats);
+  const loading  = useAppStore((s) => s.loading);
   const navigate = useNavigate();
 
   const isEmpty = !loading.sessions && !loading.stats && sessions.length === 0;
@@ -64,7 +69,7 @@ export default function Overview() {
     );
   }
 
-  const avgScoreColor = scoreColor(stats?.avg_score ?? null);
+  const avgScoreColor  = scoreColor(stats?.avg_score ?? null);
   const scoreSparkData = (stats?.score_over_time ?? []).map((p) => ({ value: p.score }));
   const recentSessions = sessions.slice(0, 10);
 
@@ -76,15 +81,15 @@ export default function Overview() {
       exit="exit"
       className="p-6 space-y-6 max-w-screen-xl mx-auto"
     >
-      {/* Page title */}
-      <div>
+      {/* Kinetic page heading */}
+      <motion.div variants={headingVariants} initial="initial" animate="animate">
         <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
           Overview
         </h1>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
           Quality at a glance across all recorded sessions
         </p>
-      </div>
+      </motion.div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -115,10 +120,17 @@ export default function Overview() {
         />
       </div>
 
-      {/* 3D Constellation */}
+      {/* 3D Constellation — hero treatment */}
       <div
-        className="surface overflow-hidden"
-        style={{ height: "340px", position: "relative" }}
+        className="overflow-hidden"
+        style={{
+          height: "480px",
+          position: "relative",
+          borderRadius: "6px",
+          border: "1px solid rgba(34,197,94,0.13)",
+          boxShadow: "0 0 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.03)",
+          background: "var(--bg-surface)",
+        }}
       >
         <p
           className="label absolute top-3 left-4 z-10"
@@ -141,7 +153,7 @@ export default function Overview() {
           style={{ height: "200px" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
+          transition={{ delay: 0.18 }}
         >
           <p className="label mb-3">Score over time</p>
           <div style={{ height: "calc(100% - 28px)" }}>
@@ -154,7 +166,7 @@ export default function Overview() {
           style={{ height: "200px" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.22 }}
         >
           <p className="label mb-3">Coverage over time</p>
           <div style={{ height: "calc(100% - 28px)" }}>
@@ -168,7 +180,7 @@ export default function Overview() {
         className="surface overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.25 }}
+        transition={{ delay: 0.28 }}
       >
         <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
           <p className="label">Recent sessions</p>
@@ -177,12 +189,7 @@ export default function Overview() {
           <thead>
             <tr style={{ borderBottom: "1px solid var(--border-muted)" }}>
               {["Score", "Agent", "Started", "Files Δ", "Lines +/−", "Regressions"].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-2 text-left label"
-                >
-                  {h}
-                </th>
+                <th key={h} className="px-4 py-2 text-left label">{h}</th>
               ))}
             </tr>
           </thead>
@@ -190,11 +197,18 @@ export default function Overview() {
             {recentSessions.map((s) => (
               <tr
                 key={s.id}
+                data-magnetic
                 className="cursor-pointer transition-colors"
                 style={{ borderBottom: "1px solid var(--border-muted)" }}
                 onClick={() => navigate(`/sessions/${s.id}`)}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-raised)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--bg-raised)";
+                  e.currentTarget.style.boxShadow  = "inset 3px 0 0 var(--score-hi)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "";
+                  e.currentTarget.style.boxShadow  = "";
+                }}
               >
                 <td className="px-4 py-2.5">
                   <ScoreBadge score={s.score} size="sm" />
@@ -213,7 +227,10 @@ export default function Overview() {
                   {" "}
                   <span style={{ color: "var(--score-lo)" }}>−{s.lines_removed}</span>
                 </td>
-                <td className="px-4 py-2.5 mono-sm" style={{ color: s.regressions_count > 0 ? "var(--score-lo)" : "var(--text-dim)" }}>
+                <td
+                  className="px-4 py-2.5 mono-sm"
+                  style={{ color: s.regressions_count > 0 ? "var(--score-lo)" : "var(--text-dim)" }}
+                >
                   {s.regressions_count}
                 </td>
               </tr>

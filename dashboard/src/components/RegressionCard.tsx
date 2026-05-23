@@ -17,7 +17,12 @@ export default function RegressionCard({ regression }: Props) {
   return (
     <div
       className="rounded p-3 space-y-2"
-      style={{ background: "var(--bg-overlay)", border: "1px solid var(--border)" }}
+      style={{
+        background: "var(--bg-overlay)",
+        border: "1px solid var(--border-muted)",
+        borderLeft: `3px solid ${sev.color}`,
+        boxShadow: `inset 3px 0 14px ${sev.color}20`,
+      }}
     >
       <div className="flex items-start gap-2">
         <span

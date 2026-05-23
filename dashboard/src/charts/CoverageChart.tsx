@@ -25,13 +25,15 @@ function CustomTooltip({ active, payload, label }: any) {
     <div
       className="rounded px-3 py-2"
       style={{
-        background: "var(--bg-raised)",
-        border: "1px solid var(--border)",
+        background: "rgba(14,16,20,0.85)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.55)",
         fontFamily: "JetBrains Mono, monospace",
         fontSize: "12px",
       }}
     >
-      <p style={{ color: "var(--text-muted)" }}>{formatDate(label as string)}</p>
+      <p style={{ color: "var(--text-muted)", marginBottom: "2px" }}>{formatDate(label as string)}</p>
       <p style={{ color: "var(--text-primary)" }}>
         Coverage: {cov !== null ? `${cov.toFixed(1)}%` : "—"}
       </p>
@@ -57,11 +59,11 @@ export default function CoverageChart({ data }: Props) {
       <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
         <defs>
           <linearGradient id="covGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="var(--score-hi)" stopOpacity={0.15} />
-            <stop offset="95%" stopColor="var(--score-hi)" stopOpacity={0} />
+            <stop offset="0%"   stopColor="var(--score-hi)" stopOpacity={0.22} />
+            <stop offset="100%" stopColor="var(--score-hi)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke="var(--border)" strokeDasharray="4 2" vertical={false} />
+        <CartesianGrid stroke="var(--border-muted)" strokeDasharray="4 2" vertical={false} />
         <XAxis
           dataKey="started_at"
           tickFormatter={formatDate}
@@ -81,9 +83,10 @@ export default function CoverageChart({ data }: Props) {
           type="monotone"
           dataKey="value"
           stroke="var(--score-hi)"
-          strokeWidth={1.5}
+          strokeWidth={2}
           fill="url(#covGrad)"
           dot={{ r: 3, fill: "var(--score-hi)", strokeWidth: 0 }}
+          activeDot={{ r: 5, fill: "var(--score-hi)", strokeWidth: 0 }}
           connectNulls
           isAnimationActive={false}
         />

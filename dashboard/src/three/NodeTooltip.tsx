@@ -29,18 +29,31 @@ export default function NodeTooltip({ session, position }: Props) {
     >
       <div
         style={{
-          background: "rgba(17,19,24,0.95)",
-          border: "1px solid #2a2d35",
-          borderRadius: "6px",
-          padding: "8px 10px",
-          minWidth: "140px",
+          background: "rgba(11,13,16,0.82)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          boxShadow:
+            "0 0 28px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)",
+          borderRadius: "7px",
+          padding: "10px 13px",
+          minWidth: "148px",
           fontSize: "11px",
           fontFamily: "JetBrains Mono, monospace",
-          backdropFilter: "blur(4px)",
           whiteSpace: "nowrap",
         }}
       >
-        <div style={{ color, fontSize: "18px", fontWeight: 700, lineHeight: 1, marginBottom: "5px", fontFamily: "Archivo, sans-serif" }}>
+        <div
+          style={{
+            color,
+            fontSize: "20px",
+            fontWeight: 700,
+            lineHeight: 1,
+            marginBottom: "6px",
+            fontFamily: "Archivo, sans-serif",
+            textShadow: `0 0 16px ${color}`,
+          }}
+        >
           {session.score !== null ? Math.round(session.score) : "—"}
         </div>
         <div style={{ color: "#7a8394", marginBottom: "2px" }}>
@@ -49,7 +62,7 @@ export default function NodeTooltip({ session, position }: Props) {
         <div style={{ color: "#40454f" }}>
           {formatRelative(session.started_at)}
         </div>
-        <div style={{ color: "#40454f", marginTop: "2px" }}>
+        <div style={{ color: "#40454f", marginTop: "3px" }}>
           {session.files_changed} file{session.files_changed !== 1 ? "s" : ""}
           {" · "}
           <span style={{ color: "#22c55e" }}>+{session.lines_added}</span>

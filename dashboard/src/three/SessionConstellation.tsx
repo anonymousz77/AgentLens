@@ -1,12 +1,11 @@
 import { useRef, useMemo, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import type { SessionSummary } from "../api/types";
 import NodeTooltip from "./NodeTooltip";
 
-// Deterministic hash from a string (session id) for stable jitter
 function hashStr(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
@@ -66,43 +65,187 @@ function computeLayout(sessions: SessionSummary[]): NodeData[] {
   });
 }
 
+// ─── Starfield ───────────────────────────────────────────────────────────────
+
+function Starfield() {
+  const geom = useMemo(() => {
+    const count = 500;
+    const arr = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 100 + Math.random() * 80;
+      arr[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      arr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      arr[i * 3 + 2] = r * Math.cos(phi);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(arr, 3));
+    return g;
+  }, []);
+
+  return (
+    <points>
+      <primitive object={geom} attach="geometry" />
+      <pointsMaterial size={0.15} color="#dde2ea" transparent opacity={0.22} sizeAttenuation />
+    </points>
+  );
+}
+
+// ─── Grid floor ──────────────────────────────────────────────────────────────
+
+function GridFloor() {
+  const grid = useMemo(() => new THREE.GridHelper(200, 60, 0x1a1f28, 0x111520), []);
+  return <primitive object={grid} position={[0, -15, 0]} />;
+}
+
+// ─── Chronological data threads ──────────────────────────────────────────────
+
+function DataThreads({ nodes }: { nodes: NodeData[] }) {
+  const lineObj = useMemo(() => {
+    if (nodes.length < 2) return null;
+    const sorted = [...nodes].sort(
+      (a, b) =>
+        new Date(a.session.started_at).getTime() -
+        new Date(b.session.started_at).getTime()
+    );
+    const verts: number[] = [];
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const nodeA = sorted[i];
+      const nodeB = sorted[i + 1];
+      if (!nodeA || !nodeB) continue;
+      const a = nodeA.position;
+      const b = nodeB.position;
+      verts.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x1e2a3a,
+      transparent: true,
+      opacity: 0.5,
+    });
+    return new THREE.LineSegments(geom, mat);
+  }, [nodes]);
+
+  if (!lineObj) return null;
+  return <primitive object={lineObj} />;
+}
+
+// ─── Drifting dust particles ──────────────────────────────────────────────────
+
+function DustParticles({ reducedMotion }: { reducedMotion: boolean }) {
+  const COUNT = 80;
+  const { geom, base, phases } = useMemo(() => {
+    const base   = new Float32Array(COUNT * 3);
+    const phases = new Float32Array(COUNT * 3);
+    const pos    = new Float32Array(COUNT * 3);
+    for (let i = 0; i < COUNT; i++) {
+      base[i * 3]       = (Math.random() - 0.5) * 60;
+      base[i * 3 + 1]   = (Math.random() - 0.5) * 35;
+      base[i * 3 + 2]   = (Math.random() - 0.5) * 40;
+      phases[i * 3]     = Math.random() * Math.PI * 2;
+      phases[i * 3 + 1] = Math.random() * Math.PI * 2;
+      phases[i * 3 + 2] = Math.random() * Math.PI * 2;
+      pos[i * 3]     = base[i * 3]     ?? 0;
+      pos[i * 3 + 1] = base[i * 3 + 1] ?? 0;
+      pos[i * 3 + 2] = base[i * 3 + 2] ?? 0;
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    return { geom, base, phases };
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (reducedMotion) return;
+    const t = clock.elapsedTime * 0.06;
+    const attr = geom.attributes["position"] as THREE.BufferAttribute;
+    for (let i = 0; i < COUNT; i++) {
+      attr.setX(i, (base[i * 3] ?? 0)     + Math.sin(t + (phases[i * 3] ?? 0))     * 1.2);
+      attr.setY(i, (base[i * 3 + 1] ?? 0) + Math.cos(t + (phases[i * 3 + 1] ?? 0)) * 0.8);
+      attr.setZ(i, (base[i * 3 + 2] ?? 0) + Math.sin(t + (phases[i * 3 + 2] ?? 0)) * 0.6);
+    }
+    attr.needsUpdate = true;
+  });
+
+  return (
+    <points>
+      <primitive object={geom} attach="geometry" />
+      <pointsMaterial size={0.07} color="#7a8394" transparent opacity={0.18} sizeAttenuation />
+    </points>
+  );
+}
+
+// ─── Session node ─────────────────────────────────────────────────────────────
+
 interface SessionNodeProps {
   data: NodeData;
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
   hovered: boolean;
+  anyHovered: boolean;
+  reducedMotion: boolean;
 }
 
-function SessionNode({ data, onSelect, onHover, hovered }: SessionNodeProps) {
+function SessionNode({ data, onSelect, onHover, hovered, anyHovered, reducedMotion }: SessionNodeProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
-  useFrame(() => {
-    const mat = meshRef.current?.material as THREE.MeshStandardMaterial | undefined;
+  useFrame(({ clock }) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
     if (!mat) return;
-    const target = hovered ? 0.65 : 0.18;
-    mat.emissiveIntensity += (target - mat.emissiveIntensity) * 0.1;
+
+    // Emissive: bright on hover, dim others when focus is active
+    const targetEmissive = hovered ? 1.2 : anyHovered ? 0.05 : 0.25;
+    mat.emissiveIntensity += (targetEmissive - mat.emissiveIntensity) * 0.1;
+
+    // Opacity fade for non-hovered nodes
+    const targetOpacity = anyHovered && !hovered ? 0.45 : 1.0;
+    if (Math.abs(mat.opacity - targetOpacity) > 0.002) {
+      mat.opacity += (targetOpacity - mat.opacity) * 0.08;
+    }
+
+    // Gentle bob — unique phase per node from its ID hash
+    if (!reducedMotion) {
+      const phase = (hashStr(data.id) / 0xffffffff) * Math.PI * 2;
+      const bob = hovered ? 0 : Math.sin(clock.elapsedTime * 0.38 + phase) * 0.28;
+      mesh.position.y += (data.position.y + bob - mesh.position.y) * 0.04;
+    }
+
+    // Scale pop on hover
+    const targetScale = hovered ? data.scale * 1.18 : data.scale;
+    const cs = mesh.scale.x;
+    if (Math.abs(cs - targetScale) > 0.001) {
+      mesh.scale.setScalar(cs + (targetScale - cs) * 0.1);
+    }
   });
 
   return (
     <mesh
       ref={meshRef}
-      position={data.position}
+      // Use array form so mesh.position is independent from data.position
+      position={[data.position.x, data.position.y, data.position.z]}
       scale={data.scale}
       onClick={(e) => { e.stopPropagation(); onSelect(data.id); }}
       onPointerOver={(e) => { e.stopPropagation(); onHover(data.id); document.body.style.cursor = "pointer"; }}
       onPointerOut={(e) => { e.stopPropagation(); onHover(null); document.body.style.cursor = ""; }}
     >
-      <sphereGeometry args={[1, 20, 20]} />
+      <sphereGeometry args={[1, 24, 24]} />
       <meshStandardMaterial
         color={data.color}
         emissive={data.color}
-        emissiveIntensity={0.18}
-        roughness={0.35}
-        metalness={0.05}
+        emissiveIntensity={0.25}
+        roughness={0.3}
+        metalness={0.1}
+        transparent
+        opacity={1}
       />
     </mesh>
   );
 }
+
+// ─── Scene ────────────────────────────────────────────────────────────────────
 
 interface SceneProps {
   sessions: SessionSummary[];
@@ -115,31 +258,65 @@ function Scene({ sessions, onSelect, reducedMotion }: SceneProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const hoveredNode = nodes.find((n) => n.id === hoveredId);
 
+  const pendingNav = useRef<{ id: string; target: THREE.Vector3 } | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const controlsRef = useRef<any>(null);
+  const { camera } = useThree();
+
+  // Camera ease toward clicked node before navigating
+  useFrame(() => {
+    const nav = pendingNav.current;
+    if (!nav) return;
+    const dest = new THREE.Vector3(nav.target.x, nav.target.y, nav.target.z + 22);
+    camera.position.lerp(dest, 0.08);
+    if (camera.position.distanceTo(dest) < 2.5) {
+      pendingNav.current = null;
+      if (controlsRef.current) controlsRef.current.enabled = true;
+      onSelect(nav.id);
+    }
+  });
+
+  function handleNodeClick(id: string, nodePos: THREE.Vector3) {
+    if (pendingNav.current) return;
+    if (reducedMotion) { onSelect(id); return; }
+    if (controlsRef.current) controlsRef.current.enabled = false;
+    pendingNav.current = { id, target: nodePos.clone() };
+    setHoveredId(null);
+  }
+
   return (
     <>
-      <color attach="background" args={["#0a0c0f"]} />
-      <fog attach="fog" args={["#0a0c0f", 70, 190]} />
+      <color attach="background" args={["#07080a"]} />
+      <fog attach="fog" args={["#07080a", 80, 200]} />
 
-      <ambientLight intensity={0.5} />
-      <pointLight position={[25, 25, 25]} intensity={1.3} />
-      <pointLight position={[-20, -15, -20]} intensity={0.4} color="#7a8394" />
+      <ambientLight intensity={0.4} />
+      <pointLight position={[30, 30, 30]} intensity={1.6} />
+      <pointLight position={[-25, -20, -25]} intensity={0.5} color="#7a8394" />
 
       <OrbitControls
+        ref={controlsRef}
         autoRotate={!reducedMotion}
-        autoRotateSpeed={0.28}
+        autoRotateSpeed={0.25}
         enablePan={false}
         minDistance={18}
-        maxDistance={110}
+        maxDistance={120}
         makeDefault
       />
+
+      <Starfield />
+      <GridFloor />
+      <DataThreads nodes={nodes} />
+      <DustParticles reducedMotion={reducedMotion} />
 
       {nodes.map((node) => (
         <SessionNode
           key={node.id}
           data={node}
-          onSelect={onSelect}
+          onSelect={(id) => handleNodeClick(id, node.position)}
           onHover={setHoveredId}
           hovered={hoveredId === node.id}
+          anyHovered={hoveredId !== null}
+          reducedMotion={reducedMotion}
         />
       ))}
 
@@ -148,7 +325,7 @@ function Scene({ sessions, onSelect, reducedMotion }: SceneProps) {
           session={hoveredNode.session}
           position={[
             hoveredNode.position.x,
-            hoveredNode.position.y + hoveredNode.scale + 1.8,
+            hoveredNode.position.y + hoveredNode.scale + 2.0,
             hoveredNode.position.z,
           ]}
         />
@@ -156,12 +333,14 @@ function Scene({ sessions, onSelect, reducedMotion }: SceneProps) {
 
       {!reducedMotion && (
         <EffectComposer>
-          <Bloom luminanceThreshold={0.45} intensity={0.75} mipmapBlur />
+          <Bloom luminanceThreshold={0.3} intensity={1.5} mipmapBlur radius={0.6} />
         </EffectComposer>
       )}
     </>
   );
 }
+
+// ─── Canvas wrapper ───────────────────────────────────────────────────────────
 
 interface Props {
   sessions: SessionSummary[];

@@ -14,7 +14,7 @@ export default function NavBar() {
     <aside
       className="flex flex-col w-48 shrink-0 border-r"
       style={{
-        background: "var(--bg-surface)",
+        background: "linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-overlay) 100%)",
         borderColor: "var(--border)",
       }}
     >
@@ -23,7 +23,13 @@ export default function NavBar() {
         className="flex items-center gap-2 px-4 py-5 border-b"
         style={{ borderColor: "var(--border)" }}
       >
-        <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 32 32"
+          aria-hidden="true"
+          style={{ filter: "drop-shadow(0 0 6px var(--score-hi))" }}
+        >
           <circle cx="16" cy="16" r="12" fill="var(--score-hi)" opacity="0.9" />
           <circle cx="16" cy="16" r="5" fill="var(--bg-base)" />
         </svg>
@@ -42,19 +48,19 @@ export default function NavBar() {
             key={to}
             to={to}
             end={end}
-            className={({ isActive }) =>
-              [
-                "flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors duration-100",
-                isActive
-                  ? "text-primary bg-raised"
-                  : "text-muted hover:text-primary hover:bg-raised",
-              ].join(" ")
-            }
+            data-magnetic
+            className="flex items-center gap-2.5 px-3 py-2 rounded text-sm"
             style={({ isActive }) => ({
               color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-              background: isActive ? "var(--bg-raised)" : "transparent",
+              background: isActive
+                ? "linear-gradient(90deg, rgba(34,197,94,0.1) 0%, rgba(34,197,94,0.02) 100%)"
+                : "transparent",
+              borderLeft: isActive ? "2px solid var(--score-hi)" : "2px solid transparent",
+              paddingLeft: "calc(0.75rem - 0px)",
               fontFamily: "Archivo, sans-serif",
               fontWeight: 500,
+              transition: "all 0.15s ease",
+              borderRadius: "4px",
             })}
           >
             <Icon size={14} strokeWidth={1.8} aria-hidden="true" />

@@ -40,9 +40,9 @@ const columns: { key: SortKey; label: string }[] = [
 ];
 
 const pageVariants = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
-  exit: { opacity: 0, transition: { duration: 0.15 } },
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.18 } },
 };
 
 export default function SessionsList() {
@@ -164,14 +164,21 @@ export default function SessionsList() {
             {sorted.map((s, i) => (
               <motion.tr
                 key={s.id}
+                data-magnetic
                 className="cursor-pointer"
                 style={{ borderBottom: "1px solid var(--border-muted)" }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: Math.min(i * 0.025, 0.3) }}
                 onClick={() => navigate(`/sessions/${s.id}`)}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-raised)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--bg-raised)";
+                  e.currentTarget.style.boxShadow  = "inset 3px 0 0 var(--score-hi)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "";
+                  e.currentTarget.style.boxShadow  = "";
+                }}
                 tabIndex={0}
                 onKeyDown={(e) => e.key === "Enter" && navigate(`/sessions/${s.id}`)}
                 aria-label={`Session ${s.id}`}

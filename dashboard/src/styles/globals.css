@@ -4,12 +4,12 @@
 
 @layer base {
   :root {
-    --bg-base:      #0a0c0f;
-    --bg-surface:   #111318;
-    --bg-overlay:   #181b21;
-    --bg-raised:    #1e2128;
-    --border:       #2a2d35;
-    --border-muted: #1a1d23;
+    --bg-base:      #07080a;
+    --bg-surface:   #0e1014;
+    --bg-overlay:   #14171c;
+    --bg-raised:    #1b1f26;
+    --border:       #262b34;
+    --border-muted: #181c22;
     --text-primary: #dde2ea;
     --text-muted:   #7a8394;
     --text-dim:     #40454f;
@@ -18,6 +18,11 @@
     --score-hi:  #22c55e;
     --score-mid: #f59e0b;
     --score-lo:  #ef4444;
+
+    /* Score glow variants for box-shadows */
+    --glow-hi:  rgba(34,197,94,0.18);
+    --glow-mid: rgba(245,158,11,0.18);
+    --glow-lo:  rgba(239,68,68,0.18);
   }
 
   * {
@@ -29,6 +34,11 @@
     margin: 0;
   }
 
+  /* Stacking context for controlled z-index layering */
+  #root {
+    isolation: isolate;
+  }
+
   body {
     font-family: "Hanken Grotesk", sans-serif;
     background-color: var(--bg-base);
@@ -37,9 +47,12 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
 
-    /* Faint noise grain texture for atmosphere */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  /* Hide OS cursor when custom cursor is active */
+  body.custom-cursor,
+  body.custom-cursor * {
+    cursor: none !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -52,10 +65,10 @@
     font-family: "JetBrains Mono", monospace;
   }
 
-  /* Scrollbar */
+  /* Refined scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -63,16 +76,18 @@
   ::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 3px;
+    transition: background 0.15s ease;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-dim);
+    background: var(--score-hi);
   }
 
-  /* Focus ring */
+  /* Focus ring with pulse */
   :focus-visible {
     outline: 1px solid var(--score-hi);
     outline-offset: 2px;
     border-radius: 2px;
+    animation: focus-ring-pulse 2s ease-in-out infinite;
   }
 }
 
@@ -81,6 +96,7 @@
     background-color: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 6px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
   .surface-overlay {
@@ -106,4 +122,39 @@
   .score-text-hi  { color: var(--score-hi); }
   .score-text-mid { color: var(--score-mid); }
   .score-text-lo  { color: var(--score-lo); }
+
+  /* Glowing hairline divider */
+  .glow-divider {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34,197,94,0.2), transparent);
+    margin: 0;
+  }
+}
+
+/* Keyframes — outside layers to avoid purge/ordering issues */
+@keyframes focus-ring-pulse {
+  0%, 100% { outline-color: var(--score-hi); }
+  50%       { outline-color: rgba(34,197,94,0.35); }
+}
+
+/* Atmospheric background orb drift animations */
+@keyframes atm-drift-1 {
+  from { transform: translate(0px, 0px) scale(1); }
+  to   { transform: translate(22px, -16px) scale(1.08); }
+}
+
+@keyframes atm-drift-2 {
+  from { transform: translate(0px, 0px) scale(1.06); }
+  to   { transform: translate(-18px, 14px) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atm-drift-1,
+  .atm-drift-2 {
+    animation: none !important;
+  }
+  :focus-visible {
+    animation: none;
+  }
 }
