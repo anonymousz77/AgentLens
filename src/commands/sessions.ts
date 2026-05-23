@@ -51,15 +51,27 @@ export function runSessions(cwd: string): void {
     "  " +
     pc.bold("started             ") +
     "  " +
+    pc.bold("score") +
+    "  " +
     pc.bold("changes");
   console.log(header);
-  console.log(pc.dim("─".repeat(72)));
+  console.log(pc.dim("─".repeat(80)));
 
   for (const row of rows) {
     const id = row.id.substring(0, 8).padEnd(8);
     const agent = (row.agent_name ?? "—").substring(0, 16).padEnd(16);
     const started = formatDate(row.started_at).padEnd(20);
     const stats = formatStats(row);
-    console.log(`${pc.cyan(id)}  ${agent}  ${pc.dim(started)}  ${stats}`);
+    const scoreStr = row.score !== null
+      ? String(Math.round(row.score)).padStart(5)
+      : "    —";
+    const coloredScore = row.score === null
+      ? pc.dim(scoreStr)
+      : row.score >= 80
+        ? pc.green(scoreStr)
+        : row.score >= 60
+          ? pc.yellow(scoreStr)
+          : pc.red(scoreStr);
+    console.log(`${pc.cyan(id)}  ${agent}  ${pc.dim(started)}  ${coloredScore}  ${stats}`);
   }
 }

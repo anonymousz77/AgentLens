@@ -11,7 +11,14 @@ import {
   updateSession,
   insertCheck,
   getChecksByPhase,
+  getDiff,
+  insertRegression,
+  updateSessionScore,
 } from "../db/sessions";
+import { loadScoringConfig } from "../config";
+import { computeScore } from "../scoring/score";
+import { detectRegressions } from "../scoring/regressions";
+import { printScoreReport } from "../scoring/format";
 import { detectChecks } from "../checks/detect";
 import { runCommand } from "../checks/run";
 import { selectParsers } from "../checks/parsers/index";
@@ -240,6 +247,29 @@ export function runSessionEnd(cwd: string): void {
 
   const baseline = getChecksByPhase(db, sessionId, "baseline");
   const final = getChecksByPhase(db, sessionId, "final");
+  const diff = getDiff(db, sessionId);
+
+  const config = loadScoringConfig(cwd);
+  const scoreResult = computeScore({ baseline, final }, config);
+  const regressions = detectRegressions(
+    baseline,
+    final,
+    diff?.patch ?? ""
+  );
+
+  db.transaction(() => {
+    updateSessionScore(db, sessionId, scoreResult.score);
+    for (const reg of regressions) {
+      insertRegression(db, {
+        session_id: sessionId,
+        description: reg.description,
+        file: reg.file,
+        hunk: reg.hunk,
+        severity: reg.severity,
+      });
+    }
+  })();
+
   db.close();
 
   fs.unlinkSync(active);
@@ -264,4 +294,5 @@ export function runSessionEnd(cwd: string): void {
   }
 
   printDeltas(baseline, final);
+  printScoreReport(scoreResult, regressions);
 }

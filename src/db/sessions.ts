@@ -1,6 +1,14 @@
 import crypto from "node:crypto";
 import Database from "better-sqlite3";
-import type { Check, CheckKind, CheckPhase } from "../types";
+import type {
+  Check,
+  CheckKind,
+  CheckPhase,
+  Diff,
+  Regression,
+  RegressionSeverity,
+  Session,
+} from "../types";
 
 export interface InsertSessionParams {
   repo_path: string;
@@ -28,9 +36,18 @@ export interface SessionListRow {
   agent_name: string | null;
   started_at: string;
   ended_at: string | null;
+  score: number | null;
   files_changed: number | null;
   lines_added: number | null;
   lines_removed: number | null;
+}
+
+export interface InsertRegressionParams {
+  session_id: string;
+  description: string;
+  file: string | null;
+  hunk: string | null;
+  severity: RegressionSeverity;
 }
 
 export function insertSession(
@@ -129,11 +146,75 @@ export function getChecksByPhase(
 export function listSessions(db: Database.Database): SessionListRow[] {
   return db
     .prepare<[], SessionListRow>(
-      "SELECT s.id, s.agent_name, s.started_at, s.ended_at, " +
+      "SELECT s.id, s.agent_name, s.started_at, s.ended_at, s.score, " +
         "d.files_changed, d.lines_added, d.lines_removed " +
         "FROM sessions s " +
         "LEFT JOIN diffs d ON d.session_id = s.id " +
         "ORDER BY s.started_at DESC"
     )
     .all() as SessionListRow[];
+}
+
+export function getDiff(
+  db: Database.Database,
+  sessionId: string
+): Diff | undefined {
+  return db
+    .prepare("SELECT * FROM diffs WHERE session_id = ?")
+    .get(sessionId) as Diff | undefined;
+}
+
+export function insertRegression(
+  db: Database.Database,
+  params: InsertRegressionParams
+): string {
+  const id = crypto.randomUUID();
+  db.prepare(
+    "INSERT INTO regressions (id, session_id, description, file, hunk, severity) " +
+      "VALUES (?, ?, ?, ?, ?, ?)"
+  ).run(
+    id,
+    params.session_id,
+    params.description,
+    params.file,
+    params.hunk,
+    params.severity
+  );
+  return id;
+}
+
+export function updateSessionScore(
+  db: Database.Database,
+  sessionId: string,
+  score: number
+): void {
+  db.prepare("UPDATE sessions SET score = ? WHERE id = ?").run(score, sessionId);
+}
+
+export function getSessionById(
+  db: Database.Database,
+  id: string
+): Session | undefined {
+  return db
+    .prepare("SELECT * FROM sessions WHERE id = ?")
+    .get(id) as Session | undefined;
+}
+
+export function getLatestSession(
+  db: Database.Database
+): Session | undefined {
+  return db
+    .prepare("SELECT * FROM sessions ORDER BY started_at DESC LIMIT 1")
+    .get() as Session | undefined;
+}
+
+export function getRegressionsBySession(
+  db: Database.Database,
+  sessionId: string
+): Regression[] {
+  return db
+    .prepare(
+      "SELECT * FROM regressions WHERE session_id = ? ORDER BY severity, description"
+    )
+    .all(sessionId) as Regression[];
 }

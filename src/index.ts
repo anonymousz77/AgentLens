@@ -5,6 +5,7 @@ import { runInit } from "./commands/init";
 import { runSessionStart, runSessionEnd } from "./commands/session";
 import { runSessions } from "./commands/sessions";
 import { runCheck } from "./commands/check";
+import { runScore } from "./commands/score";
 
 const program = new Command();
 
@@ -55,6 +56,13 @@ program
   .description("detect and run checks once (no session) — for debugging detection")
   .action(() => {
     runCheck(process.cwd());
+  });
+
+program
+  .command("score [session-id]")
+  .description("recompute and display score for a session (default: latest)")
+  .action((sessionId?: string) => {
+    runScore(process.cwd(), sessionId);
   });
 
 // Placeholder commands wired in later phases. Declared now so `--help` shows
