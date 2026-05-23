@@ -9,7 +9,8 @@
       "Bash(xargs grep -l \"scoring\\\\|score\\\\|regression\")",
       "Bash(npm run *)",
       "Bash(npm test *)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Select-Object Name, FullName)"
     ]
   }
 }

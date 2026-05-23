@@ -13,8 +13,10 @@
   ],
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc && npm run build:dashboard",
+    "build:cli": "tsc",
+    "build:dashboard": "cd dashboard && npm install --prefer-offline && npm run build",
+    "typecheck": "tsc --noEmit && cd dashboard && npx tsc --noEmit",
     "start": "node dist/index.js",
     "test": "vitest run"
   },

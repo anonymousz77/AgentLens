@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-base:      #0a0c0f;
+    --bg-surface:   #111318;
+    --bg-overlay:   #181b21;
+    --bg-raised:    #1e2128;
+    --border:       #2a2d35;
+    --border-muted: #1a1d23;
+    --text-primary: #dde2ea;
+    --text-muted:   #7a8394;
+    --text-dim:     #40454f;
+
+    /* Score is the only chromatic color — green → amber → red */
+    --score-hi:  #22c55e;
+    --score-mid: #f59e0b;
+    --score-lo:  #ef4444;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    font-family: "Hanken Grotesk", sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Faint noise grain texture for atmosphere */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Archivo", sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  code, pre, .mono {
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-dim);
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 1px solid var(--score-hi);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  .surface {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .surface-overlay {
+    background-color: var(--bg-overlay);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .label {
+    font-family: "Archivo", sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .mono-sm {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+  }
+
+  .score-text-hi  { color: var(--score-hi); }
+  .score-text-mid { color: var(--score-mid); }
+  .score-text-lo  { color: var(--score-lo); }
+}
