@@ -39,7 +39,7 @@ function AnimatedScore({ score }: { score: number }) {
       style={{
         color,
         fontVariantNumeric: "tabular-nums",
-        textShadow: `0 0 48px ${color}cc, 0 0 80px ${color}55`,
+        textShadow: `0 0 64px ${color}cc, 0 0 110px ${color}66`,
       }}
     >
       {displayed}
@@ -144,7 +144,7 @@ export default function SessionDetail() {
               style={{
                 position: "absolute",
                 inset: 0,
-                background: `radial-gradient(ellipse 60% 50% at 50% 50%, ${heroColor}18, transparent 72%)`,
+                background: `radial-gradient(ellipse 60% 50% at 50% 50%, ${heroColor}2a, transparent 72%)`,
                 pointerEvents: "none",
               }}
               aria-hidden="true"

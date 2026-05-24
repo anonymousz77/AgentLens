@@ -19,13 +19,13 @@ export default function AtmosphericBackground() {
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        const ox = (pendingX - 0.5) * 40;
-        const oy = (pendingY - 0.5) * 30;
+        const ox = (pendingX - 0.5) * 65;
+        const oy = (pendingY - 0.5) * 48;
         if (orb1Ref.current) {
           orb1Ref.current.style.transform = `translate(${ox}px, ${oy}px)`;
         }
         if (orb2Ref.current) {
-          orb2Ref.current.style.transform = `translate(${-ox * 0.75}px, ${-oy * 0.6}px)`;
+          orb2Ref.current.style.transform = `translate(${-ox * 0.80}px, ${-oy * 0.65}px)`;
         }
       });
     };
@@ -53,7 +53,7 @@ export default function AtmosphericBackground() {
         {/* Orb 1 — top-left, score-hi green tint */}
         <div
           ref={orb1Ref}
-          style={{ position: "absolute", top: "-15vw", left: "-10vw", width: "65vw", height: "65vw" }}
+          style={{ position: "absolute", top: "-15vw", left: "-10vw", width: "80vw", height: "80vw" }}
         >
           <div
             className="atm-drift-1"
@@ -61,7 +61,7 @@ export default function AtmosphericBackground() {
               width: "100%",
               height: "100%",
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(34,197,94,0.055) 0%, transparent 70%)",
+              background: "radial-gradient(circle, rgba(34,197,94,0.13) 0%, transparent 70%)",
               animation: "atm-drift-1 38s ease-in-out infinite alternate",
             }}
           />
@@ -70,7 +70,7 @@ export default function AtmosphericBackground() {
         {/* Orb 2 — bottom-right, score-lo red tint */}
         <div
           ref={orb2Ref}
-          style={{ position: "absolute", bottom: "-12vw", right: "-8vw", width: "55vw", height: "55vw" }}
+          style={{ position: "absolute", bottom: "-12vw", right: "-8vw", width: "70vw", height: "70vw" }}
         >
           <div
             className="atm-drift-2"
@@ -78,7 +78,7 @@ export default function AtmosphericBackground() {
               width: "100%",
               height: "100%",
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(239,68,68,0.03) 0%, transparent 70%)",
+              background: "radial-gradient(circle, rgba(239,68,68,0.08) 0%, transparent 70%)",
               animation: "atm-drift-2 52s ease-in-out infinite alternate",
             }}
           />
@@ -114,7 +114,7 @@ export default function AtmosphericBackground() {
           inset: 0,
           backgroundImage: GRAIN,
           backgroundRepeat: "repeat",
-          opacity: 0.055,
+          opacity: 0.075,
           pointerEvents: "none",
           zIndex: 9998,
           mixBlendMode: "screen",

@@ -217,8 +217,12 @@ program
   .command("dashboard")
   .description("launch the local web dashboard")
   .option("-p, --port <number>", "port to listen on", String(4319))
-  .action((opts: { port?: string }) => {
-    runDashboard(process.cwd(), { port: opts.port ? parseInt(opts.port, 10) : undefined });
+  .option("--demo", "show ~36 synthetic sessions instead of real DB data", false)
+  .action((opts: { port?: string; demo?: boolean }) => {
+    runDashboard(process.cwd(), {
+      port: opts.port ? parseInt(opts.port, 10) : undefined,
+      demo: opts.demo,
+    });
   });
 
 program.parseAsync(process.argv).catch((err) => {

@@ -46,11 +46,11 @@ function computeLayout(sessions: SessionSummary[]): NodeData[] {
 
   return sessions.map((s) => {
     const t = (new Date(s.started_at).getTime() - minTime) / timeRange;
-    const x = (t * 2 - 1) * 28;
+    const x = (t * 2 - 1) * 36;
 
     const hash = hashStr(s.id);
-    const y = (((hash & 0xff) / 255) - 0.5) * 18;
-    const z = ((((hash >> 8) & 0xff) / 255) - 0.5) * 18;
+    const y = (((hash & 0xff) / 255) - 0.5) * 28;
+    const z = ((((hash >> 8) & 0xff) / 255) - 0.5) * 32;
 
     const lines = s.lines_added + s.lines_removed;
     const scale = 0.45 + (lines / maxLines) * 2.2;
@@ -69,7 +69,7 @@ function computeLayout(sessions: SessionSummary[]): NodeData[] {
 
 function Starfield() {
   const geom = useMemo(() => {
-    const count = 500;
+    const count = 800;
     const arr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       const theta = Math.random() * Math.PI * 2;
@@ -87,7 +87,7 @@ function Starfield() {
   return (
     <points>
       <primitive object={geom} attach="geometry" />
-      <pointsMaterial size={0.15} color="#dde2ea" transparent opacity={0.22} sizeAttenuation />
+      <pointsMaterial size={0.20} color="#dde2ea" transparent opacity={0.38} sizeAttenuation />
     </points>
   );
 }
@@ -121,9 +121,9 @@ function DataThreads({ nodes }: { nodes: NodeData[] }) {
     const geom = new THREE.BufferGeometry();
     geom.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
     const mat = new THREE.LineBasicMaterial({
-      color: 0x1e2a3a,
+      color: 0x2d4a6a,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.7,
     });
     return new THREE.LineSegments(geom, mat);
   }, [nodes]);
@@ -135,7 +135,7 @@ function DataThreads({ nodes }: { nodes: NodeData[] }) {
 // ─── Drifting dust particles ──────────────────────────────────────────────────
 
 function DustParticles({ reducedMotion }: { reducedMotion: boolean }) {
-  const COUNT = 80;
+  const COUNT = 140;
   const { geom, base, phases } = useMemo(() => {
     const base   = new Float32Array(COUNT * 3);
     const phases = new Float32Array(COUNT * 3);
@@ -171,7 +171,7 @@ function DustParticles({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <points>
       <primitive object={geom} attach="geometry" />
-      <pointsMaterial size={0.07} color="#7a8394" transparent opacity={0.18} sizeAttenuation />
+      <pointsMaterial size={0.10} color="#7a8394" transparent opacity={0.30} sizeAttenuation />
     </points>
   );
 }
@@ -197,11 +197,11 @@ function SessionNode({ data, onSelect, onHover, hovered, anyHovered, reducedMoti
     if (!mat) return;
 
     // Emissive: bright on hover, dim others when focus is active
-    const targetEmissive = hovered ? 1.2 : anyHovered ? 0.05 : 0.25;
+    const targetEmissive = hovered ? 1.8 : anyHovered ? 0.02 : 0.45;
     mat.emissiveIntensity += (targetEmissive - mat.emissiveIntensity) * 0.1;
 
     // Opacity fade for non-hovered nodes
-    const targetOpacity = anyHovered && !hovered ? 0.45 : 1.0;
+    const targetOpacity = anyHovered && !hovered ? 0.25 : 1.0;
     if (Math.abs(mat.opacity - targetOpacity) > 0.002) {
       mat.opacity += (targetOpacity - mat.opacity) * 0.08;
     }
@@ -209,12 +209,12 @@ function SessionNode({ data, onSelect, onHover, hovered, anyHovered, reducedMoti
     // Gentle bob — unique phase per node from its ID hash
     if (!reducedMotion) {
       const phase = (hashStr(data.id) / 0xffffffff) * Math.PI * 2;
-      const bob = hovered ? 0 : Math.sin(clock.elapsedTime * 0.38 + phase) * 0.28;
+      const bob = hovered ? 0 : Math.sin(clock.elapsedTime * 0.38 + phase) * 0.50;
       mesh.position.y += (data.position.y + bob - mesh.position.y) * 0.04;
     }
 
     // Scale pop on hover
-    const targetScale = hovered ? data.scale * 1.18 : data.scale;
+    const targetScale = hovered ? data.scale * 1.35 : data.scale;
     const cs = mesh.scale.x;
     if (Math.abs(cs - targetScale) > 0.001) {
       mesh.scale.setScalar(cs + (targetScale - cs) * 0.1);
@@ -235,7 +235,7 @@ function SessionNode({ data, onSelect, onHover, hovered, anyHovered, reducedMoti
       <meshStandardMaterial
         color={data.color}
         emissive={data.color}
-        emissiveIntensity={0.25}
+        emissiveIntensity={0.45}
         roughness={0.3}
         metalness={0.1}
         transparent
@@ -287,7 +287,7 @@ function Scene({ sessions, onSelect, reducedMotion }: SceneProps) {
   return (
     <>
       <color attach="background" args={["#07080a"]} />
-      <fog attach="fog" args={["#07080a", 80, 200]} />
+      <fog attach="fog" args={["#07080a", 55, 175]} />
 
       <ambientLight intensity={0.4} />
       <pointLight position={[30, 30, 30]} intensity={1.6} />
@@ -333,7 +333,7 @@ function Scene({ sessions, onSelect, reducedMotion }: SceneProps) {
 
       {!reducedMotion && (
         <EffectComposer>
-          <Bloom luminanceThreshold={0.3} intensity={1.5} mipmapBlur radius={0.6} />
+          <Bloom luminanceThreshold={0.18} intensity={2.5} mipmapBlur radius={0.6} />
         </EffectComposer>
       )}
     </>

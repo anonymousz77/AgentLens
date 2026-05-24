@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import Layout from "./components/Layout";
 import MagneticCursor from "./components/MagneticCursor";
+import DemoBanner from "./components/DemoBanner";
 import Overview from "./pages/Overview";
 import SessionsList from "./pages/SessionsList";
 import SessionDetail from "./pages/SessionDetail";
@@ -40,6 +41,7 @@ export default function App() {
         </AnimatePresence>
       </Layout>
       <MagneticCursor />
+      <DemoBanner />
     </>
   );
 }

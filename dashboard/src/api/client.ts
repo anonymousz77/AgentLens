@@ -17,3 +17,6 @@ export const fetchStats = (): Promise<AgentStats> =>
 
 export const fetchSessionDetail = (id: string): Promise<SessionDetail> =>
   get<SessionDetail>(`/api/sessions/${encodeURIComponent(id)}`);
+
+export const fetchMeta = (): Promise<{ demo: boolean; autoDemo: boolean }> =>
+  get<{ demo: boolean; autoDemo: boolean }>("/api/meta");

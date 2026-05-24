@@ -80,7 +80,7 @@ export default function StatCard({
             left: 0,
             right: 0,
             height: "70%",
-            background: `radial-gradient(ellipse 70% 60% at 50% 0%, ${valueColor}14, transparent 100%)`,
+            background: `radial-gradient(ellipse 70% 60% at 50% 0%, ${valueColor}28, transparent 100%)`,
             pointerEvents: "none",
           }}
           aria-hidden="true"
@@ -97,7 +97,7 @@ export default function StatCard({
           fontSize: "clamp(26px, 3.5vw, 38px)",
           lineHeight: 1.05,
           color: isScoreColor ? undefined : valueColor,
-          filter: isScoreColor ? `drop-shadow(0 0 10px ${valueColor}80)` : undefined,
+          filter: isScoreColor ? `drop-shadow(0 0 18px ${valueColor}a0)` : undefined,
         }}
       >
         {isInt && isScoreColor ? (

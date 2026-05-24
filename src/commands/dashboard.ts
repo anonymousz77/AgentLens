@@ -3,6 +3,7 @@ import { execSync } from "child_process";
 import pc from "picocolors";
 import path from "path";
 import { isInitialized } from "../db/database";
+import { listSessionsSummary } from "../api/read";
 import { handleApi } from "../server/api";
 import { serveStatic } from "../server/static";
 
@@ -22,11 +23,34 @@ function openBrowser(url: string): void {
   }
 }
 
-export function runDashboard(repoRoot: string, opts: { port?: number }): void {
-  if (!isInitialized(repoRoot)) {
+export function runDashboard(
+  repoRoot: string,
+  opts: { port?: number; demo?: boolean }
+): void {
+  const explicitDemo = opts.demo ?? false;
+
+  if (!explicitDemo && !isInitialized(repoRoot)) {
     console.error(pc.red("Error: AgentLens is not initialised in this directory."));
     console.error(pc.dim("Run `agentlens init` first."));
     process.exit(1);
+  }
+
+  // Determine effective demo mode.
+  // Auto-demo kicks in when the DB is empty so first-run users see a live scene.
+  let autoDemo = false;
+  if (!explicitDemo && isInitialized(repoRoot)) {
+    const sessions = listSessionsSummary(repoRoot);
+    autoDemo = sessions.length === 0;
+  }
+
+  const effectiveDemo = explicitDemo || autoDemo;
+
+  if (explicitDemo) {
+    console.log(
+      pc.yellow(
+        "\n  ⚠  Running in DEMO mode — showing synthetic data (your real database is untouched).\n"
+      )
+    );
   }
 
   const port = opts.port ?? DEFAULT_PORT;
@@ -46,7 +70,10 @@ export function runDashboard(repoRoot: string, opts: { port?: number }): void {
     }
 
     try {
-      const handled = handleApi(pathname, repoRoot, res);
+      const handled = handleApi(pathname, repoRoot, res, {
+        demo: effectiveDemo,
+        autoDemo,
+      });
       if (!handled) {
         serveStatic(staticRoot, req, res);
       }

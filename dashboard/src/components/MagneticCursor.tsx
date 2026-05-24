@@ -29,10 +29,10 @@ function CursorImpl() {
         dotRawY.set(e.clientY - 2);
 
         // Ring: magnetic pull toward nearest [data-magnetic] element
-        let tx = e.clientX - 14;
-        let ty = e.clientY - 14;
+        let tx = e.clientX - 19;
+        let ty = e.clientY - 19;
         const magnetics = document.querySelectorAll("[data-magnetic]");
-        let closestDist = 80;
+        let closestDist = 100;
         magnetics.forEach((el) => {
           const r = el.getBoundingClientRect();
           const cx = r.left + r.width  / 2;
@@ -40,9 +40,9 @@ function CursorImpl() {
           const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
           if (dist < closestDist) {
             closestDist = dist;
-            const pull = (1 - dist / 80) * 0.28;
-            tx = e.clientX - 14 + (cx - e.clientX) * pull;
-            ty = e.clientY - 14 + (cy - e.clientY) * pull;
+            const pull = (1 - dist / 100) * 0.42;
+            tx = e.clientX - 19 + (cx - e.clientX) * pull;
+            ty = e.clientY - 19 + (cy - e.clientY) * pull;
           }
         });
         rawX.set(tx);
@@ -62,7 +62,7 @@ function CursorImpl() {
 
         if (ringRef.current) {
           ringRef.current.style.borderColor = color;
-          ringRef.current.style.boxShadow   = `0 0 12px ${color}`;
+          ringRef.current.style.boxShadow   = `0 0 20px ${color}`;
         }
         if (dotRef.current) {
           dotRef.current.style.background = color;
@@ -89,8 +89,8 @@ function CursorImpl() {
           left: 0,
           x: ringX,
           y: ringY,
-          width: 28,
-          height: 28,
+          width: 38,
+          height: 38,
           borderRadius: "50%",
           border: "1px solid rgba(38,43,52,0.9)",
           pointerEvents: "none",
