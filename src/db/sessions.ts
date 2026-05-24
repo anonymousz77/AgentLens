@@ -272,3 +272,18 @@ export function getJudgeScoresBySession(
     .prepare("SELECT * FROM judge_scores WHERE session_id = ?")
     .all(sessionId) as JudgeScore[];
 }
+
+export interface AgentSessionRow {
+  agent_name: string;
+  score: number | null;
+  cost_usd: number | null;
+}
+
+/** Fetch all sessions that have an agent_name set, for use in agent comparison. */
+export function getAgentSessions(db: Database.Database): AgentSessionRow[] {
+  return db
+    .prepare(
+      "SELECT agent_name, score, cost_usd FROM sessions WHERE agent_name IS NOT NULL ORDER BY started_at DESC"
+    )
+    .all() as AgentSessionRow[];
+}

@@ -14,6 +14,7 @@ import { runCI, runCIInit, parseCICommandOpts } from "./commands/ci";
 import { runAgentRun } from "./commands/run";
 import { runAdapter } from "./commands/adapter";
 import { runBisect } from "./commands/bisect";
+import { runCompare, type CompareOptions } from "./compare/run";
 import type { CheckKind } from "./types";
 
 const program = new Command();
@@ -200,6 +201,17 @@ program
       });
     }
   );
+
+program
+  .command("compare")
+  .description("compare agent quality statistics across recorded sessions")
+  .option("--agent <name>", "first agent for pairwise comparison")
+  .option("--vs <name>", "second agent for pairwise comparison")
+  .option("--metric <m>", "score or cost (default: score)", "score")
+  .option("--json", "output structured JSON")
+  .action((opts: CompareOptions) => {
+    runCompare(process.cwd(), opts);
+  });
 
 program
   .command("dashboard")
