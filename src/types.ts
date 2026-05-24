@@ -96,11 +96,16 @@ export interface JudgeConfig {
   baseURL: string | null;
 }
 
+export interface CiConfig {
+  min_score: number;
+}
+
 export interface AgentLensConfig {
   version: number;
   scoring: ScoringConfig;
   cost: CostConfig;
   judge: JudgeConfig;
+  ci: CiConfig;
 }
 
 export const DEFAULT_CONFIG: AgentLensConfig = {
@@ -123,5 +128,8 @@ export const DEFAULT_CONFIG: AgentLensConfig = {
     provider: "none",
     model: "claude-haiku-4-5-20251001",
     baseURL: null,
+  },
+  ci: {
+    min_score: 70,
   },
 };

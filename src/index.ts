@@ -10,6 +10,7 @@ import { runStats } from "./commands/stats";
 import { runDashboard } from "./commands/dashboard";
 import { runWatch } from "./commands/watch";
 import { runJudge, runJudgeCalibrate } from "./commands/judge";
+import { runCI, runCIInit, parseCICommandOpts } from "./commands/ci";
 
 const program = new Command();
 
@@ -118,6 +119,29 @@ judgeCmd
       console.error(pc.red("agentlens judge calibrate: " + String(err)));
       process.exit(1);
     });
+  });
+
+const ciCmd = program
+  .command("ci")
+  .description("score the current PR/commit and gate the build (CI mode)")
+  .option("--base <ref>", "base ref for delta mode (default: GITHUB_BASE_REF env var)")
+  .option("--min-score <n>", "minimum passing score (default: 70)")
+  .option("--comment", "post a sticky PR comment (requires GITHUB_TOKEN)", false)
+  .option("--no-fail", "always exit 0 — report-only mode")
+  .option("--json", "output machine-readable JSON", false)
+  .action((opts: { base?: string; minScore?: string; comment?: boolean; fail?: boolean; json?: boolean }) => {
+    runCI(process.cwd(), parseCICommandOpts(opts)).catch((err: unknown) => {
+      console.error(pc.red("agentlens ci: " + String(err)));
+      process.exit(1);
+    });
+  });
+
+ciCmd
+  .command("init")
+  .description("write a starter .github/workflows/agentlens.yml")
+  .option("-f, --force", "overwrite an existing workflow file", false)
+  .action((opts: { force?: boolean }) => {
+    runCIInit(process.cwd(), { force: opts.force });
   });
 
 program

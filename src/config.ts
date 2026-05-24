@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DEFAULT_CONFIG } from "./types";
-import type { CostConfig, JudgeConfig, ScoringConfig } from "./types";
+import type { CiConfig, CostConfig, JudgeConfig, ScoringConfig } from "./types";
 
 export function loadScoringConfig(repoRoot: string): ScoringConfig {
   const configPath = path.join(repoRoot, ".agentlens", "config.json");
@@ -77,6 +77,43 @@ export function loadCostConfig(repoRoot: string): CostConfig {
     return result;
   } catch {
     return { ...DEFAULT_CONFIG.cost };
+  }
+}
+
+export function loadCiConfig(repoRoot: string): CiConfig {
+  const configPath = path.join(repoRoot, ".agentlens", "config.json");
+
+  if (!fs.existsSync(configPath)) {
+    return { ...DEFAULT_CONFIG.ci };
+  }
+
+  try {
+    const raw = fs.readFileSync(configPath, "utf8");
+    const parsed: unknown = JSON.parse(raw);
+
+    if (typeof parsed !== "object" || parsed === null) {
+      return { ...DEFAULT_CONFIG.ci };
+    }
+
+    const ciOverride = (parsed as Record<string, unknown>)["ci"];
+
+    if (typeof ciOverride !== "object" || ciOverride === null) {
+      return { ...DEFAULT_CONFIG.ci };
+    }
+
+    const override = ciOverride as Record<string, unknown>;
+    const result: CiConfig = { ...DEFAULT_CONFIG.ci };
+
+    for (const key of Object.keys(DEFAULT_CONFIG.ci) as Array<keyof CiConfig>) {
+      const val = override[key];
+      if (typeof val === "number" && isFinite(val)) {
+        (result as unknown as Record<string, number>)[key] = val;
+      }
+    }
+
+    return result;
+  } catch {
+    return { ...DEFAULT_CONFIG.ci };
   }
 }
 

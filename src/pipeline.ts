@@ -59,7 +59,7 @@ export interface SessionFinalResult {
   final: Check[];
 }
 
-function runChecks(repoRoot: string): PreCheckResult[] {
+export function runChecks(repoRoot: string): PreCheckResult[] {
   const detected = detectChecks(repoRoot);
   const parsers = selectParsers(detected.ecosystem);
   const results: PreCheckResult[] = [];
