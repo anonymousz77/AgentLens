@@ -12,6 +12,7 @@ import type { BaselineHandle } from "../pipeline";
 export interface SessionStartOptions {
   agent?: string;
   notes?: string;
+  task?: string;
 }
 
 interface ActiveSession {
@@ -100,6 +101,7 @@ export function runSessionStart(
   const handle: BaselineHandle = captureBaseline(cwd, db, {
     agentName: opts.agent ?? null,
     notes: opts.notes ?? null,
+    task: opts.task ?? null,
   });
 
   const baselineChecks = getChecksByPhase(db, handle.sessionId, "baseline");
@@ -133,7 +135,12 @@ export function runSessionStart(
   );
 }
 
-export function runSessionEnd(cwd: string): void {
+export interface SessionEndOptions {
+  tokensIn?: number;
+  tokensOut?: number;
+}
+
+export function runSessionEnd(cwd: string, opts: SessionEndOptions = {}): void {
   const active = activePath(cwd);
 
   if (!fs.existsSync(active)) {
@@ -147,9 +154,14 @@ export function runSessionEnd(cwd: string): void {
   const raw = fs.readFileSync(active, "utf8");
   const { sessionId, s0Sha } = JSON.parse(raw) as ActiveSession;
 
+  const costOverride =
+    opts.tokensIn !== undefined && opts.tokensOut !== undefined
+      ? { tokensIn: opts.tokensIn, tokensOut: opts.tokensOut }
+      : undefined;
+
   console.log(pc.dim("  running final checks..."));
   const db = openDatabase(cwd);
-  const result = finalizeSession(cwd, db, { sessionId, s0Sha });
+  const result = finalizeSession(cwd, db, { sessionId, s0Sha }, costOverride);
   db.close();
 
   fs.unlinkSync(active);
@@ -175,4 +187,13 @@ export function runSessionEnd(cwd: string): void {
 
   printDeltas(result.baseline, result.final);
   printScoreReport(result.scoreResult, result.regressions);
+
+  const costPrefix = result.cost_estimated ? "~$" : "$";
+  console.log(
+    pc.dim(
+      `Cost: ${costPrefix}${result.cost_usd.toFixed(4)}` +
+        (result.cost_estimated ? " est." : "") +
+        ` (${result.tokens} tokens)`
+    )
+  );
 }

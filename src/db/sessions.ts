@@ -16,6 +16,7 @@ export interface InsertSessionParams {
   agent_name: string | null;
   git_base_sha: string | null;
   notes: string | null;
+  task?: string | null;
 }
 
 export interface UpdateSessionParams {
@@ -41,6 +42,8 @@ export interface SessionListRow {
   files_changed: number | null;
   lines_added: number | null;
   lines_removed: number | null;
+  task: string | null;
+  cost_estimated: number;
 }
 
 export interface InsertRegressionParams {
@@ -58,15 +61,16 @@ export function insertSession(
   const id = crypto.randomUUID();
   const started_at = new Date().toISOString();
   db.prepare(
-    "INSERT INTO sessions (id, repo_path, agent_name, started_at, git_base_sha, notes) " +
-      "VALUES (?, ?, ?, ?, ?, ?)"
+    "INSERT INTO sessions (id, repo_path, agent_name, started_at, git_base_sha, notes, task) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).run(
     id,
     params.repo_path,
     params.agent_name,
     started_at,
     params.git_base_sha,
-    params.notes
+    params.notes,
+    params.task ?? null
   );
   return id;
 }
@@ -148,6 +152,7 @@ export function listSessions(db: Database.Database): SessionListRow[] {
   return db
     .prepare<[], SessionListRow>(
       "SELECT s.id, s.agent_name, s.started_at, s.ended_at, s.score, " +
+        "s.task, s.cost_estimated, " +
         "d.files_changed, d.lines_added, d.lines_removed " +
         "FROM sessions s " +
         "LEFT JOIN diffs d ON d.session_id = s.id " +
@@ -196,11 +201,12 @@ export function updateSessionCost(
   db: Database.Database,
   sessionId: string,
   tokens: number,
-  cost_usd: number
+  cost_usd: number,
+  cost_estimated: 0 | 1 = 1
 ): void {
   db
-    .prepare("UPDATE sessions SET tokens = ?, cost_usd = ? WHERE id = ?")
-    .run(tokens, cost_usd, sessionId);
+    .prepare("UPDATE sessions SET tokens = ?, cost_usd = ?, cost_estimated = ? WHERE id = ?")
+    .run(tokens, cost_usd, cost_estimated, sessionId);
 }
 
 export function getSessionById(

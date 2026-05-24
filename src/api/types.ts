@@ -11,6 +11,8 @@ export interface SessionSummary {
   lines_added: number;
   lines_removed: number;
   regressions_count: number;
+  task: string | null;
+  cost_estimated: number;
 }
 
 export interface CheckDelta {

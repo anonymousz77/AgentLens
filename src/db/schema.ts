@@ -8,7 +8,7 @@
  * Bump SCHEMA_VERSION whenever the shape changes and add a migration step.
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -27,10 +27,12 @@ CREATE TABLE IF NOT EXISTS sessions (
   ended_at      TEXT,
   git_base_sha  TEXT,
   git_head_sha  TEXT,
-  score         REAL,
-  tokens        INTEGER,
-  cost_usd      REAL,
-  notes         TEXT
+  score          REAL,
+  tokens         INTEGER,
+  cost_usd       REAL,
+  cost_estimated INTEGER NOT NULL DEFAULT 1,
+  notes          TEXT,
+  task           TEXT
 );
 
 CREATE TABLE IF NOT EXISTS diffs (

@@ -53,6 +53,15 @@ export function openDatabase(repoRoot: string): Database.Database {
           "CHECK (phase IN ('baseline','final'))"
       );
     }
+
+    if (storedVersion < 3) {
+      // Add task and cost_estimated columns introduced in schema v3.
+      // cost_estimated defaults to 1 (estimated) for all pre-existing sessions.
+      db.exec("ALTER TABLE sessions ADD COLUMN task TEXT");
+      db.exec(
+        "ALTER TABLE sessions ADD COLUMN cost_estimated INTEGER NOT NULL DEFAULT 1"
+      );
+    }
   }
 
   // Upsert current schema version.

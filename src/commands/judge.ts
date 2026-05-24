@@ -65,18 +65,21 @@ export async function runJudge(
 
   const cacheDir = path.join(agentlensDir(cwd), "judge-cache");
 
+  // Default task to the session's stored task when not explicitly passed.
+  const effectiveTask = opts.task ?? session.task ?? undefined;
+
   console.log(
     pc.bold("LLM Judge") +
       pc.dim(` — session ${session.id.slice(0, 8)}…  [provider: ${judgeConfig.provider}]`)
   );
-  if (opts.task) {
-    console.log(pc.dim(`Task: ${opts.task}`));
+  if (effectiveTask) {
+    console.log(pc.dim(`Task: ${effectiveTask}`));
   }
   console.log();
 
   const results = await judgeSession(
     diff.patch,
-    { task: opts.task, cacheDir },
+    { task: effectiveTask, cacheDir },
     provider,
     judgeConfig
   );

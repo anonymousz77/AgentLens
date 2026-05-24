@@ -80,5 +80,8 @@ export function runSessions(cwd: string, opts: { json?: boolean } = {}): void {
           ? pc.yellow(scoreStr)
           : pc.red(scoreStr);
     console.log(`${pc.cyan(id)}  ${agent}  ${pc.dim(started)}  ${coloredScore}  ${stats}`);
+    if (row.task) {
+      console.log(`          ${pc.dim("└ " + row.task)}`);
+    }
   }
 }

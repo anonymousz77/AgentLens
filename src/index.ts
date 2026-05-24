@@ -11,6 +11,8 @@ import { runDashboard } from "./commands/dashboard";
 import { runWatch } from "./commands/watch";
 import { runJudge, runJudgeCalibrate } from "./commands/judge";
 import { runCI, runCIInit, parseCICommandOpts } from "./commands/ci";
+import { runAgentRun } from "./commands/run";
+import { runAdapter } from "./commands/adapter";
 
 const program = new Command();
 
@@ -37,16 +39,19 @@ sessionCmd
   .command("start")
   .description("snapshot the repo and begin a session")
   .option("--agent <name>", "name of the agent (e.g. claude-code)")
+  .option("--task <description>", "task description for this session")
   .option("--notes <text>", "free-form notes for this session")
-  .action((opts: { agent?: string; notes?: string }) => {
+  .action((opts: { agent?: string; task?: string; notes?: string }) => {
     runSessionStart(process.cwd(), opts);
   });
 
 sessionCmd
   .command("end")
   .description("snapshot the repo, compute diff, and close the session")
-  .action(() => {
-    runSessionEnd(process.cwd());
+  .option("--tokens-in <n>", "actual input token count — overrides diff-based cost estimate", parseInt)
+  .option("--tokens-out <n>", "actual output token count — overrides diff-based cost estimate", parseInt)
+  .action((opts: { tokensIn?: number; tokensOut?: number }) => {
+    runSessionEnd(process.cwd(), opts);
   });
 
 program
@@ -142,6 +147,25 @@ ciCmd
   .option("-f, --force", "overwrite an existing workflow file", false)
   .action((opts: { force?: boolean }) => {
     runCIInit(process.cwd(), { force: opts.force });
+  });
+
+program
+  .command("run")
+  .description("wrap a CLI agent command and auto-record the session (baseline → run → finalize)")
+  .requiredOption("--agent <name>", "agent name (e.g. aider, claude-code)")
+  .option("--task <description>", "task description for this session")
+  .option("--tokens-in <n>", "actual input token count — overrides diff-based cost estimate", parseInt)
+  .option("--tokens-out <n>", "actual output token count — overrides diff-based cost estimate", parseInt)
+  .argument("[args...]", "command to run (pass after --)")
+  .action((args: string[], opts: { agent: string; task?: string; tokensIn?: number; tokensOut?: number }) => {
+    runAgentRun(process.cwd(), args, opts);
+  });
+
+program
+  .command("adapter <tool>")
+  .description("print integration recipe for a supported agent tool (aider, claude-code)")
+  .action((tool: string) => {
+    runAdapter(process.cwd(), tool);
   });
 
 program

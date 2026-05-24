@@ -18,7 +18,7 @@ import { detectRegressions } from "./scoring/regressions";
 import { detectChecks } from "./checks/detect";
 import { runCommand } from "./checks/run";
 import { selectParsers } from "./checks/parsers/index";
-import { estimateCost } from "./cost/estimate";
+import { resolveCost } from "./run/wiring";
 import type { Check, CheckKind, CheckPhase } from "./types";
 import type { ScoreResult } from "./scoring/score";
 import type { DetectedRegression } from "./scoring/regressions";
@@ -50,6 +50,7 @@ export interface SessionFinalResult {
   score: number;
   tokens: number;
   cost_usd: number;
+  cost_estimated: number;
   filesChanged: number;
   linesAdded: number;
   linesRemoved: number;
@@ -134,6 +135,7 @@ export function openSessionFromPreBaseline(
     agent_name: agentName,
     git_base_sha: pre.headSha,
     notes: null,
+    task: null,
   });
   storeChecks(db, sessionId, pre.checkResults, "baseline");
   return { sessionId, s0Sha: pre.s0Sha };
@@ -142,7 +144,7 @@ export function openSessionFromPreBaseline(
 export function captureBaseline(
   repoRoot: string,
   db: Database.Database,
-  opts?: { agentName?: string | null; notes?: string | null }
+  opts?: { agentName?: string | null; notes?: string | null; task?: string | null }
 ): BaselineHandle {
   const pre = captureWatchPreBaseline(repoRoot);
   const sessionId = insertSession(db, {
@@ -150,6 +152,7 @@ export function captureBaseline(
     agent_name: opts?.agentName ?? null,
     git_base_sha: pre.headSha,
     notes: opts?.notes ?? null,
+    task: opts?.task ?? null,
   });
   storeChecks(db, sessionId, pre.checkResults, "baseline");
   return { sessionId, s0Sha: pre.s0Sha };
@@ -158,7 +161,8 @@ export function captureBaseline(
 export function finalizeSession(
   repoRoot: string,
   db: Database.Database,
-  handle: BaselineHandle
+  handle: BaselineHandle,
+  costOverride?: { tokensIn: number; tokensOut: number }
 ): SessionFinalResult {
   const s1Sha = takeSnapshot(repoRoot);
   const { filesChanged, linesAdded, linesRemoved, patch } = computeDiff(
@@ -209,17 +213,23 @@ export function finalizeSession(
   })();
 
   const costConfig = loadCostConfig(repoRoot);
-  const { tokens, cost_usd } = estimateCost(
-    { lines_added: linesAdded, lines_removed: linesRemoved },
+  const { tokens, cost_usd, cost_estimated } = resolveCost(
+    {
+      tokensIn: costOverride?.tokensIn,
+      tokensOut: costOverride?.tokensOut,
+      linesAdded,
+      linesRemoved,
+    },
     costConfig
   );
-  updateSessionCost(db, handle.sessionId, tokens, cost_usd);
+  updateSessionCost(db, handle.sessionId, tokens, cost_usd, cost_estimated);
 
   return {
     sessionId: handle.sessionId,
     score: scoreResult.score,
     tokens,
     cost_usd,
+    cost_estimated,
     filesChanged,
     linesAdded,
     linesRemoved,

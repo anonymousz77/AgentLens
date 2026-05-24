@@ -15,10 +15,12 @@ export interface Session {
   ended_at: string | null;
   git_base_sha: string | null;
   git_head_sha: string | null;
-  score: number | null; // 0-100
-  tokens: number | null;
-  cost_usd: number | null;
-  notes: string | null;
+  score:          number | null; // 0-100
+  tokens:         number | null;
+  cost_usd:       number | null;
+  cost_estimated: number;        // 0 = real tokens, 1 = diff-based estimate
+  notes:          string | null;
+  task:           string | null;
 }
 
 export interface Diff {

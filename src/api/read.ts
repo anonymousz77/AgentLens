@@ -33,6 +33,8 @@ export function listSessionsSummary(repoRoot: string): SessionSummary[] {
       lines_added: row.lines_added ?? 0,
       lines_removed: row.lines_removed ?? 0,
       regressions_count: getRegressionsBySession(db, row.id).length,
+      task: row.task,
+      cost_estimated: row.cost_estimated,
     }));
   } finally {
     db.close();
