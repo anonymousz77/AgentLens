@@ -13,6 +13,8 @@ import { runJudge, runJudgeCalibrate } from "./commands/judge";
 import { runCI, runCIInit, parseCICommandOpts } from "./commands/ci";
 import { runAgentRun } from "./commands/run";
 import { runAdapter } from "./commands/adapter";
+import { runBisect } from "./commands/bisect";
+import type { CheckKind } from "./types";
 
 const program = new Command();
 
@@ -167,6 +169,37 @@ program
   .action((tool: string) => {
     runAdapter(process.cwd(), tool);
   });
+
+program
+  .command("bisect <session-id>")
+  .description(
+    "binary-search git history to find the first commit that introduced a check regression"
+  )
+  .option(
+    "--check <name>",
+    "check kind to bisect: test, type, or lint (default: auto-select by severity)"
+  )
+  .option(
+    "--retries <n>",
+    "retry count per commit to guard against flaky checks (default: 1)",
+    "1"
+  )
+  .option("--json", "output machine-readable JSON", false)
+  .action(
+    (
+      sessionId: string,
+      opts: { check?: string; retries?: string; json?: boolean }
+    ) => {
+      runBisect(process.cwd(), sessionId, {
+        checkFilter: opts.check as CheckKind | undefined,
+        retries: opts.retries ? parseInt(opts.retries, 10) : 1,
+        json: opts.json ?? false,
+      }).catch((err: unknown) => {
+        console.error(pc.red("agentlens bisect: " + String(err)));
+        process.exit(1);
+      });
+    }
+  );
 
 program
   .command("dashboard")
