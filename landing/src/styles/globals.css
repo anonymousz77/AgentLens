@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Source of truth: src/lib/colors.ts SCORE_GREEN / SCORE_AMBER / SCORE_RED */
+  --score-hi:     #22c55e;
+  --score-mid:    #f59e0b;
+  --score-lo:     #ef4444;
+  --bg-base:      #07080a;
+  --text-primary: #dde2ea;
+  --text-muted:   #7a8394;
+  --text-dim:     #40454f;
+  --border:       #262b34;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Hanken Grotesk', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  isolation: isolate;
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Focus ring for nav dots — applied via className="nav-dot" */
+.nav-dot:focus-visible {
+  outline: 2px solid var(--score-hi);
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+/* Reduced motion: kill all animations system-wide as a belt-and-suspenders layer.
+   JS components check prefersReducedMotion separately for finer control. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
