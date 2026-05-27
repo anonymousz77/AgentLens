@@ -1,7 +1,7 @@
-export function Verdict() {
+export function Capture() {
   return (
     <section
-      id="verdict"
+      id="capture"
       style={{
         height: '100svh',
         display: 'flex',
@@ -9,7 +9,7 @@ export function Verdict() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #78350f, #4a1e07)',
+        background: 'linear-gradient(to bottom, #14532d, #0a2e18)',
       }}
     >
       <h2
@@ -25,7 +25,7 @@ export function Verdict() {
           margin: 0,
         }}
       >
-        Join the developers measuring their agents.
+        It runs your tests, types, and lint — then scores what changed.
       </h2>
     </section>
   );

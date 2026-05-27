@@ -3,15 +3,15 @@ import type Lenis from 'lenis';
 import { Scene } from './scene/Scene';
 import { Nav } from './components/Nav';
 import { HUD } from './components/HUD';
-import { Observe } from './sections/Observe';
-import { Scan } from './sections/Scan';
-import { Regression } from './sections/Regression';
+import { Hero } from './sections/Hero';
+import { Capture } from './sections/Capture';
+import { Depth } from './sections/Depth';
+import { Proof } from './sections/Proof';
 import { Verdict } from './sections/Verdict';
-import { Globe } from './sections/Globe';
 import { getLenis, startLenis } from './scroll/lenis';
 import { useScrollStore } from './scroll/store';
 
-const SECTION_IDS = ['observe', 'scan', 'regression', 'verdict', 'globe'] as const;
+const SECTION_IDS = ['hero', 'capture', 'depth', 'proof', 'verdict'] as const;
 
 export default function App() {
   useEffect(() => {
@@ -56,13 +56,15 @@ export default function App() {
       <Nav />
       <HUD />
 
-      {/* Layer 2: scrollable page content, z-index:1, transparent backgrounds */}
+      {/* Layer 2: scrollable page content, z-index:1 */}
       <main style={{ position: 'relative', zIndex: 1 }}>
-        <Observe />
-        <Scan />
-        <Regression />
+        <Hero />
+        <Capture />
+        <Depth />
+        <Proof />
         <Verdict />
-        <Globe />
+        {/* Breathing room so Verdict fully settles and activeSection reliably reaches 4 */}
+        <div style={{ height: '20svh' }} />
       </main>
     </>
   );

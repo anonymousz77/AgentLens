@@ -1,7 +1,7 @@
-export function Verdict() {
+export function Hero() {
   return (
     <section
-      id="verdict"
+      id="hero"
       style={{
         height: '100svh',
         display: 'flex',
@@ -9,10 +9,10 @@ export function Verdict() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #78350f, #4a1e07)',
+        background: 'linear-gradient(to bottom, #7c3a1a, #4a1f08)',
       }}
     >
-      <h2
+      <h1
         style={{
           fontFamily: '"Archivo", sans-serif',
           fontWeight: 700,
@@ -25,8 +25,8 @@ export function Verdict() {
           margin: 0,
         }}
       >
-        Join the developers measuring their agents.
-      </h2>
+        Did your agent make the codebase better — or quietly worse?
+      </h1>
     </section>
   );
 }

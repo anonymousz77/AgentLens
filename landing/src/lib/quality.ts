@@ -14,12 +14,15 @@ export interface QualityConfig {
   bloomEnabled: boolean;
   particleMultiplier: number; // 1.0 / 0.6 / 0.3 — for later phases
   shadowsEnabled: boolean;
+  transmissionSamples: number;    // MeshTransmissionMaterial samples; 0 = use cheap fallback
+  transmissionResolution: number; // FBO resolution for transmission buffer
+  environmentResolution: number;  // Environment cubemap resolution
 }
 
 const TIER_CONFIGS = {
-  high:   { tier: 'high'   as const, dpr: 2,   bloomEnabled: true,  particleMultiplier: 1.0, shadowsEnabled: true  },
-  medium: { tier: 'medium' as const, dpr: 1.5, bloomEnabled: true,  particleMultiplier: 0.6, shadowsEnabled: false },
-  low:    { tier: 'low'    as const, dpr: 1,   bloomEnabled: false, particleMultiplier: 0.3, shadowsEnabled: false },
+  high:   { tier: 'high'   as const, dpr: 2,   bloomEnabled: true,  particleMultiplier: 1.0, shadowsEnabled: true,  transmissionSamples: 10, transmissionResolution: 1024, environmentResolution: 256 },
+  medium: { tier: 'medium' as const, dpr: 1.5, bloomEnabled: true,  particleMultiplier: 0.6, shadowsEnabled: false, transmissionSamples: 6,  transmissionResolution: 512,  environmentResolution: 128 },
+  low:    { tier: 'low'    as const, dpr: 1,   bloomEnabled: false, particleMultiplier: 0.3, shadowsEnabled: false, transmissionSamples: 0,  transmissionResolution: 256,  environmentResolution: 64  },
 } satisfies Record<QualityTier, QualityConfig>;
 
 function detectTier(): QualityTier {

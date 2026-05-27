@@ -3,11 +3,11 @@ import { useScrollProgress } from '../scroll/useScrollProgress';
 import { useMotionStore } from '../lib/prefersReducedMotion';
 
 const SECTIONS = [
-  { id: 'observe',    label: 'OBSERVE',    index: 0 },
-  { id: 'scan',       label: 'SCAN',       index: 1 },
-  { id: 'regression', label: 'REGRESSION', index: 2 },
-  { id: 'verdict',    label: 'VERDICT',    index: 3 },
-  { id: 'globe',      label: 'GLOBE',      index: 4 },
+  { id: 'hero',    label: 'HERO',    index: 0 },
+  { id: 'capture', label: 'CAPTURE', index: 1 },
+  { id: 'depth',   label: 'DEPTH',   index: 2 },
+  { id: 'proof',   label: 'PROOF',   index: 3 },
+  { id: 'verdict', label: 'VERDICT', index: 4 },
 ] as const;
 
 export function Nav() {

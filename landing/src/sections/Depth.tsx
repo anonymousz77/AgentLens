@@ -1,7 +1,7 @@
-export function Verdict() {
+export function Depth() {
   return (
     <section
-      id="verdict"
+      id="depth"
       style={{
         height: '100svh',
         display: 'flex',
@@ -9,7 +9,7 @@ export function Verdict() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #78350f, #4a1e07)',
+        background: 'linear-gradient(to bottom, #1a2744, #0d1526)',
       }}
     >
       <h2
@@ -25,7 +25,7 @@ export function Verdict() {
           margin: 0,
         }}
       >
-        Join the developers measuring their agents.
+        A calibrated judge. O(log n) bisection. Honest comparison.
       </h2>
     </section>
   );

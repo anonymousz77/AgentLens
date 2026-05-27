@@ -1,7 +1,7 @@
-export function Verdict() {
+export function Proof() {
   return (
     <section
-      id="verdict"
+      id="proof"
       style={{
         height: '100svh',
         display: 'flex',
@@ -9,7 +9,7 @@ export function Verdict() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #78350f, #4a1e07)',
+        background: 'linear-gradient(to bottom, #04040a, #010103)',
       }}
     >
       <h2
@@ -25,7 +25,7 @@ export function Verdict() {
           margin: 0,
         }}
       >
-        Join the developers measuring their agents.
+        See every session. Catch every regression.
       </h2>
     </section>
   );
