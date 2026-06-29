@@ -3,8 +3,8 @@ import { LayoutDashboard, List } from "lucide-react";
 import { useAppStore } from "../store/app";
 
 const navItems = [
-  { to: "/", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/sessions", label: "Sessions", icon: List, end: false },
+  { to: "/app", label: "Overview", icon: LayoutDashboard, end: true },
+  { to: "/app/sessions", label: "Sessions", icon: List, end: false },
 ];
 
 export default function NavBar() {

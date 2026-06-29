@@ -9,7 +9,7 @@ export function Capture() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #14532d, #0a2e18)',
+        background: 'transparent', // Phase 2 will restore per-section environments
       }}
     >
       <h2

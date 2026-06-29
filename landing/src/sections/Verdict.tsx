@@ -9,7 +9,7 @@ export function Verdict() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #78350f, #4a1e07)',
+        background: 'transparent', // Phase 2 will restore per-section environments
       }}
     >
       <h2

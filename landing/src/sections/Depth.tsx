@@ -9,7 +9,7 @@ export function Depth() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #1a2744, #0d1526)',
+        background: 'transparent', // Phase 2 will restore per-section environments
       }}
     >
       <h2

@@ -9,7 +9,7 @@ export function Proof() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #04040a, #010103)',
+        background: 'transparent', // Phase 2 will restore per-section environments
       }}
     >
       <h2

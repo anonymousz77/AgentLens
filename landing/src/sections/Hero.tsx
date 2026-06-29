@@ -9,7 +9,7 @@ export function Hero() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 4rem',
-        background: 'linear-gradient(to bottom, #7c3a1a, #4a1f08)',
+        background: 'transparent', // Phase 2 will restore per-section environments
       }}
     >
       <h1
