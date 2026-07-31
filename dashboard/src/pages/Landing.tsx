@@ -633,10 +633,14 @@ function LivePreview() {
         See it live
       </h2>
 
-      {/* TODO: drop preview.png into dashboard/public/ */}
       <img
         src="/preview.png"
         alt="AgentLens constellation dashboard"
+        // Hide gracefully rather than show a broken-image icon if the static
+        // screenshot hasn't been dropped into dashboard/public/ yet.
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
         style={{
           width: "100%",
           maxHeight: "560px",

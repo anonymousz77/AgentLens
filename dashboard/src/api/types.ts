@@ -11,6 +11,8 @@ export interface SessionSummary {
   lines_added: number;
   lines_removed: number;
   regressions_count: number;
+  task: string | null;
+  cost_estimated: number;
 }
 
 export interface Check {
@@ -47,6 +49,8 @@ export interface Session {
   tokens: number | null;
   cost_usd: number | null;
   notes: string | null;
+  task: string | null;
+  cost_estimated: number;
 }
 
 export interface Regression {
