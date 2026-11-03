@@ -83,6 +83,37 @@ TOTAL             100     12     20      3    85%
     expect(r.coverage_pct).toBeCloseTo(85);
   });
 
+  it("parses pytest's real ordering (failed before passed)", () => {
+    const output = `
+FAILED tests/test_discounts.py::test_volume_tier_25 - assert 25000 == 23750
+FAILED tests/test_money.py::test_format_usd_negative - AssertionError
+3 failed, 19 passed in 0.12s
+`;
+    const r = parse(output, 1);
+    expect(r.passed).toBe(19);
+    expect(r.failed).toBe(3);
+    expect(r.total).toBe(22);
+  });
+
+  it("ignores skipped/warnings/errors entries in the summary line", () => {
+    const output =
+      "==== 2 failed, 40 passed, 3 skipped, 5 warnings, 1 error in 4.51s (0:00:04) ====";
+    const r = parse(output, 1);
+    expect(r.passed).toBe(40);
+    expect(r.failed).toBe(2);
+    expect(r.total).toBe(42);
+  });
+
+  it("parses coverage from a pytest-cov TOTAL line without branch columns", () => {
+    const output = `
+TOTAL                     65      7    89%
+22 passed in 0.12s
+`;
+    const r = parse(output, 0);
+    expect(r.passed).toBe(22);
+    expect(r.coverage_pct).toBeCloseTo(89);
+  });
+
   it("strips ANSI codes before parsing", () => {
     const output = "\x1b[32m5 passed\x1b[0m in 0.10s";
     const r = parse(output, 0);

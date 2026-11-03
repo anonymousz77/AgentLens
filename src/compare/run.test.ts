@@ -249,3 +249,22 @@ describe("runCompare — no sessions", () => {
     expect(() => runCompare(repo, {})).not.toThrow();
   });
 });
+
+describe("runCompare — pairwise output order", () => {
+  it("reports --agent minus --vs even when --vs has the higher mean", () => {
+    const repo = tempRepo();
+    for (const s of [60, 62, 64, 66, 68]) seedSession(repo, "low-agent", s);
+    for (const s of [80, 82, 84, 86, 88]) seedSession(repo, "high-agent", s);
+    const lines: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => { lines.push(args.map(String).join(" ")); };
+    try {
+      runCompare(repo, { agent: "low-agent", vs: "high-agent" });
+    } finally {
+      console.log = orig;
+    }
+    const plain = lines.join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    expect(plain).toContain("Difference (low-agent − high-agent): -20.0 points");
+    expect(plain).toContain("high-agent scores higher than low-agent");
+  });
+});

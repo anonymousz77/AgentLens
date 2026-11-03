@@ -123,9 +123,14 @@ function printTable(output: CompareOutput, pairwiseMode: boolean): void {
   const metricLabel = metric === "score" ? "score (0–100, higher is better)" : "cost in USD (lower is better)";
 
   if (pairwiseMode && agents.length === 2) {
-    // Detailed pairwise view
-    const [a, b] = agents as [AgentGroup, AgentGroup];
+    // Detailed pairwise view. `agents` is sorted by mean, but the pairwise
+    // result is computed as --agent minus --vs, so print in the pair's order.
     const pw = pairwise[0];
+    const byName = (name: string): AgentGroup | undefined =>
+      agents.find((g) => g.agentName === name);
+    const [a, b] = (
+      pw ? [byName(pw.agentA) ?? agents[0], byName(pw.agentB) ?? agents[1]] : agents
+    ) as [AgentGroup, AgentGroup];
 
     console.log();
     console.log(pc.bold(`AgentLens — pairwise comparison  (metric: ${metricLabel})`));
