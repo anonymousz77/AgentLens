@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://anonymousz77.github.io/AgentLens/sitemap.xml

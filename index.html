@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgentLens — quality scores for AI coding-agent sessions</title>
+  <meta name="description" content="AgentLens snapshots your repo before and after an AI coding agent works, runs your project's own tests, type-checker and linter, and turns the difference into a deterministic 0–100 score. Local-first, open source.">
+  <link rel="canonical" href="https://anonymousz77.github.io/AgentLens/">
+  <meta name="theme-color" content="#f6f5f1">
+  <meta name="color-scheme" content="light">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="AgentLens">
+  <meta property="og:title" content="AgentLens — did that agent session make your codebase better, or quietly worse?">
+  <meta property="og:description" content="Local-first observability and scoring for AI coding-agent sessions. Before/after snapshots, your own test/type/lint checks, a deterministic 0–100 score, regression bisection and CI gating.">
+  <meta property="og:url" content="https://anonymousz77.github.io/AgentLens/">
+  <meta property="og:image" content="https://anonymousz77.github.io/AgentLens/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/source-serif-4-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+  <script src="assets/site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header" id="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="AgentLens home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="#17703f"/></svg>
+      AgentLens
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#method">Method</a>
+      <a href="#scoring">Scoring</a>
+      <a href="#attribution">Bisection</a>
+      <a href="#ci">CI</a>
+      <a href="#compare">Comparison</a>
+      <a href="#install">Install</a>
+    </nav>
+    <div class="header-actions">
+      <a class="btn btn-ghost btn-sm" href="https://github.com/anonymousz77/AgentLens">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="https://agent-lens-one.vercel.app">Live demo</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow"><span>Open source</span><span>MIT</span><span>TypeScript · Node 18+</span></p>
+    <h1>Did that agent session make your codebase better, or <em>quietly worse?</em></h1>
+
+    <div class="hero-grid">
+      <div>
+        <p class="lede">AgentLens snapshots your repository before and after an AI coding agent works, runs your project's own tests, type-checker and linter on both sides, and turns the difference into a 0–100 score you can audit line by line. It runs on your machine and keeps everything in a local SQLite file.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://agent-lens-one.vercel.app">Open the live dashboard
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/anonymousz77/AgentLens">Read the source</a>
+        </div>
+        <p class="install-hint">Works with Claude Code, Cursor, Aider, or any agent that edits files in a git repo. Not on npm yet — <a href="#install">install from source</a>.</p>
+      </div>
+
+      <figure style="margin:0">
+        <div class="term" role="img" aria-label="Terminal output of agentlens session end showing a score of 50 out of 100, with three regressed tests and two new type errors">
+          <div class="term-bar"><span><b>billing-service</b> — main</span><span>agentlens session end</span></div>
+<pre><span class="p">$</span> <span class="cmd">agentlens session end</span>
+<span class="d">  running final checks...</span>
+<span class="g b">✓</span> Session <span class="c">#36d50911</span> ended. <span class="b">2</span> file(s) changed, <span class="g">+19</span> / <span class="r">-10</span>
+<span class="b">Deltas:</span>
+  tests:       22/22 → 19/22 <span class="r">↓</span>
+  coverage:    89.0% → 87.0%
+  type errors: 0 → 2 <span class="r">↑</span>
+  lint errors: 5 → 3 <span class="g">↓</span>
+
+<span class="b">Score: </span><span class="r">50</span><span class="d"> / 100</span>
+<span class="d">────────────────────────────────────────────────</span>
+  coverage delta (-2.0pp)              <span class="r">-1.00</span>
+  lint errors removed (2)              <span class="g">+2.00</span>
+  test regressions (3)                 <span class="r">-45.00</span>
+  type errors added (2)                <span class="r">-6.00</span>
+<span class="d">────────────────────────────────────────────────</span>
+<span class="b">Regressions (2):</span>
+  <span class="r">[high]    </span> 3 test(s) regressed (were passing, now failing)
+             <span class="c">billing/discounts.py</span>  <span class="d">@@ -1,5 +1,3 @@</span>
+  <span class="y">[medium]  </span> 2 type error(s) introduced
+             <span class="c">billing/discounts.py</span>  <span class="d">@@ -1,5 +1,3 @@</span>
+<span class="d">Cost: ~$0.0013 est. (432 tokens)</span></pre>
+        </div>
+        <figcaption class="figure-caption">Captured from a real run on a sample Python service checked by pytest, pytest-cov, mypy and ruff. The diff added a tidy-looking tier table. It also broke three tests and two type annotations.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="facts">
+    <div class="fact"><div class="fact-value">0–100</div><div class="fact-label">Deterministic score. Same inputs, same number, no model involved.</div></div>
+    <div class="fact"><div class="fact-value">log<sub>2</sub> n</div><div class="fact-label">Check-runs to find the commit that introduced a regression.</div></div>
+    <div class="fact"><div class="fact-value">6</div><div class="fact-label">Output parsers: pytest, vitest, tsc, ESLint, mypy, Ruff.</div></div>
+    <div class="fact"><div class="fact-value">0</div><div class="fact-label">Network requests by default. One SQLite file per repo.</div></div>
+  </div>
+</div>
+
+<!-- ── 01 Problem ───────────────────────────────────────────────────────── -->
+<section class="section no-rule" id="problem">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>01</b>Problem</div>
+      <div>
+        <h2>Agents write code faster than anyone can review it.</h2>
+        <p class="section-intro">A session ends, the diff looks plausible, and the agent reports that the tests pass. What's missing is a record of how the project's health actually changed, measured the same way every time by the tools the project already trusts.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <ul class="failures">
+        <li><span class="k">Regressed tests</span><p>Tests that were green now fail, in a module the agent never mentioned touching.</p></li>
+        <li><span class="k">Weakened types</span><p>A function that returned <code>int</code> can now return <code>None</code>, and a new helper ships without annotations.</p></li>
+        <li><span class="k">Lost coverage</span><p>New branches land untested. Coverage slides two points and nobody notices for a month.</p></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── 02 Method ────────────────────────────────────────────────────────── -->
+<section class="section" id="method">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>02</b>Method</div>
+      <div>
+        <h2>Measure the repository, not the transcript.</h2>
+        <p class="section-intro">AgentLens doesn't read chat logs or trust the agent's summary of its own work. It compares the code before and after, using the same commands your CI would run.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <ol class="steps">
+        <li><h3>Snapshot</h3><p>Records the base commit and writes a tree of the working copy, uncommitted edits included, through a throwaway git index. Your branch, index and stash are left alone.</p></li>
+        <li><h3>Baseline</h3><p>Detects the toolchain and runs tests, type-checker and linter before the agent starts, storing pass/fail counts and coverage.</p></li>
+        <li><h3>Re-run</h3><p>When the session ends, runs the same commands again and stores both phases and the full diff in SQLite.</p></li>
+        <li><h3>Score &amp; attribute</h3><p>Turns the deltas into a 0–100 score, lists each regression with a severity, and points at the diff hunk most likely responsible.</p></li>
+      </ol>
+
+      <h3 class="subhead">Toolchain detection</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Ecosystem</th><th>Detected from</th><th>Tests</th><th>Types</th><th>Lint</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>JavaScript / TypeScript</td>
+              <td class="faint">package.json, tsconfig.json, ESLint config</td>
+              <td><span class="tool">vitest run</span></td>
+              <td><span class="tool">tsc --noEmit</span></td>
+              <td><span class="tool">eslint .</span></td>
+            </tr>
+            <tr>
+              <td>Python</td>
+              <td class="faint">pyproject.toml, setup.py, setup.cfg, requirements.txt, conftest.py</td>
+              <td><span class="tool">pytest</span> <span class="faint">+ pytest-cov</span></td>
+              <td><span class="tool">mypy .</span></td>
+              <td><span class="tool">ruff check .</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">Missing tools and missing data are never penalised: the score only moves when a check's result differs between baseline and final. Each tool's output goes through a dedicated parser with its own fixtures in the test suite.</p>
+
+      <h3 class="subhead">Three ways to record a session</h3>
+      <div class="modes">
+        <div class="mode">
+          <code class="cmdline">agentlens session start|end</code>
+          <p>Bracket the work by hand. Works with any agent, IDE or chat window.</p>
+        </div>
+        <div class="mode">
+          <code class="cmdline">agentlens run -- &lt;agent&gt;</code>
+          <p>Wrap a CLI agent: baseline before it starts, finalize when it exits. The agent's exit code passes through.</p>
+        </div>
+        <div class="mode">
+          <code class="cmdline">agentlens watch</code>
+          <p>Watch the working tree. A session opens on the first change and closes after 45 seconds of quiet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 03 Scoring ───────────────────────────────────────────────────────── -->
+<section class="section" id="scoring">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>03</b>Scoring</div>
+      <div>
+        <h2>A score you can recompute by hand.</h2>
+        <p class="section-intro">Every session starts at 100. Each change in a check moves the score by a fixed, documented amount, and the result is clamped to 0–100. There's no model in this number: the same baseline and final results always produce the same score.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="split wide-right">
+        <div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>Signal</th><th>Rule</th><th class="num">Default</th></tr></thead>
+              <tbody>
+                <tr><td>Test regression</td><td class="faint">each test that went from passing to failing</td><td class="num">−15</td></tr>
+                <tr><td>New failure</td><td class="faint">each failure beyond the regressed tests</td><td class="num">−8</td></tr>
+                <tr><td>Build break</td><td class="faint">the suite ran before and can't run now</td><td class="num">−40</td></tr>
+                <tr><td>Coverage</td><td class="faint">per percentage point, either direction</td><td class="num">±0.5</td></tr>
+                <tr><td>Type errors</td><td class="faint">per error added or removed</td><td class="num">∓3</td></tr>
+                <tr><td>Lint errors</td><td class="faint">per error added or removed</td><td class="num">∓1</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="footnote">Regressions are inferred from aggregate counts and only when the suite didn't shrink, so deleting tests isn't mistaken for breaking them. Missing data, such as no coverage report, is skipped rather than penalised.</p>
+        </div>
+        <div class="config-note" style="margin-top:0">
+          <div class="term">
+            <div class="term-bar"><span><b>.agentlens/config.json</b></span><span>weights are config</span></div>
+<pre><span class="d">{</span>
+  <span class="c">"scoring"</span>: <span class="d">{</span>
+    <span class="c">"test_regression_penalty"</span>: 15,
+    <span class="c">"new_failure_penalty"</span>: 8,
+    <span class="c">"build_break_penalty"</span>: 40,
+    <span class="c">"coverage_delta_weight"</span>: 0.5,
+    <span class="c">"type_error_delta_weight"</span>: 3,
+    <span class="c">"lint_error_delta_weight"</span>: 1
+  <span class="d">},</span>
+  <span class="c">"ci"</span>: <span class="d">{</span> <span class="c">"min_score"</span>: 70 <span class="d">}</span>
+<span class="d">}</span></pre>
+          </div>
+          <p class="figure-caption">Override any weight per repository. <code>agentlens score</code> recomputes a stored session with the current weights.</p>
+        </div>
+      </div>
+
+      <h3 class="subhead" id="calculator">Try the formula</h3>
+      <div class="calc" data-calc>
+        <div class="calc-inputs">
+          <p class="hint">The same arithmetic as <code>src/scoring/score.ts</code> with default weights. The readout uses the CLI's report format.</p>
+
+          <div class="field" data-field="regressed">
+            <label for="f-regressed">Tests regressed<small>were passing, now failing</small></label>
+            <div class="stepper"><button type="button" data-step="-1" aria-label="Decrease tests regressed">−</button><input id="f-regressed" type="number" inputmode="numeric" min="0" max="99" step="1" value="3"><button type="button" data-step="1" aria-label="Increase tests regressed">+</button></div>
+          </div>
+          <div class="field" data-field="newfail">
+            <label for="f-newfail">New test failures<small>beyond the regressed tests</small></label>
+            <div class="stepper"><button type="button" data-step="-1" aria-label="Decrease new failures">−</button><input id="f-newfail" type="number" inputmode="numeric" min="0" max="99" step="1" value="0"><button type="button" data-step="1" aria-label="Increase new failures">+</button></div>
+          </div>
+          <div class="field" data-field="coverage">
+            <label for="f-coverage">Coverage change<small>percentage points</small></label>
+            <div class="stepper"><button type="button" data-step="-0.5" aria-label="Decrease coverage change">−</button><input id="f-coverage" type="number" inputmode="decimal" min="-100" max="100" step="0.5" value="-2"><button type="button" data-step="0.5" aria-label="Increase coverage change">+</button></div>
+          </div>
+          <div class="field" data-field="types">
+            <label for="f-types">Type errors<small>final minus baseline</small></label>
+            <div class="stepper"><button type="button" data-step="-1" aria-label="Decrease type error change">−</button><input id="f-types" type="number" inputmode="numeric" min="-99" max="99" step="1" value="2"><button type="button" data-step="1" aria-label="Increase type error change">+</button></div>
+          </div>
+          <div class="field" data-field="lint">
+            <label for="f-lint">Lint errors<small>final minus baseline</small></label>
+            <div class="stepper"><button type="button" data-step="-1" aria-label="Decrease lint error change">−</button><input id="f-lint" type="number" inputmode="numeric" min="-99" max="99" step="1" value="-2"><button type="button" data-step="1" aria-label="Increase lint error change">+</button></div>
+          </div>
+          <label class="check"><input id="f-break" type="checkbox"> Test suite failed to run (build break)</label>
+
+          <div class="presets" role="group" aria-label="Example sessions">
+            <span>Examples:</span>
+            <button type="button" class="chip" data-preset="session" aria-pressed="true">Session above</button>
+            <button type="button" class="chip" data-preset="clean" aria-pressed="false">Clean refactor</button>
+            <button type="button" class="chip" data-preset="break" aria-pressed="false">Build break</button>
+          </div>
+        </div>
+        <div class="calc-output">
+          <div class="term-bar"><span><b>agentlens score</b></span><span>default weights</span></div>
+          <pre data-out aria-live="polite"></pre>
+          <div class="gate" data-gate></div>
+        </div>
+      </div>
+      <noscript><p class="footnote">The calculator needs JavaScript. The table above has everything it computes.</p></noscript>
+    </div>
+  </div>
+</section>
+
+<!-- ── 04 Attribution ───────────────────────────────────────────────────── -->
+<section class="section" id="attribution">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>04</b>Bisection</div>
+      <div>
+        <h2>When a session spans many commits, name the one that broke it.</h2>
+        <p class="section-intro"><code>agentlens bisect</code> binary-searches the session's commits in a separate git worktree, re-running only the check that regressed. Eight commits take three check-runs; a hundred take seven. <code>--retries</code> repeats each probe to guard against flaky tests.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div>
+        <div>
+          <p class="footnote" style="margin:0 0 12px">Session <span class="mono">a3ee9e94</span> · 8 commits · tests 22/22 → 18/22</p>
+          <ol class="bisect" aria-label="Commits in the session, oldest first, with bisection probes">
+            <li class="is-good is-known"><span class="node"></span><span class="sha">4ff79d5</span><span class="subj">baseline (main)</span><span class="res">pass · known</span></li>
+            <li class="is-skipped"><span class="node"></span><span class="sha">80f1dd0</span><span class="subj">test: label invoice fixture</span><span class="res">—</span></li>
+            <li class="is-skipped"><span class="node"></span><span class="sha">9e155aa</span><span class="subj">money: add CURRENCY constant</span><span class="res">—</span></li>
+            <li class="is-skipped"><span class="node"></span><span class="sha">fa27287</span><span class="subj">tax: drop unused import</span><span class="res">—</span></li>
+            <li class="is-good"><span class="node"></span><span class="sha">2501d43</span><span class="subj">invoice: add line_count helper</span><span class="res">pass · probe 1</span></li>
+            <li class="is-bad is-culprit"><span class="node"></span><span class="sha">99943b6</span><span class="subj">tax: simplify rounding</span><span class="res">fail · probe 3 · first bad</span></li>
+            <li class="is-bad"><span class="node"></span><span class="sha">3a28138</span><span class="subj">invoice: add is_empty helper</span><span class="res">fail · probe 2</span></li>
+            <li class="is-skipped"><span class="node"></span><span class="sha">e5807ba</span><span class="subj">tax: document rate units</span><span class="res">—</span></li>
+            <li class="is-bad is-known"><span class="node"></span><span class="sha">3130fbc</span><span class="subj">money: add usd alias</span><span class="res">fail · known (HEAD)</span></li>
+          </ol>
+          <p class="footnote">The session report's hunk attribution is a heuristic, and for this session it pointed at <code>invoice.py</code>. Bisection actually runs the check at each probed commit, so its answer rests on evidence: the rounding change in <code>tax.py</code>.</p>
+        </div>
+        <div class="term bisect-figure">
+          <div class="term-bar"><span><b>billing-service</b> — agent/refactor-invoice</span><span>bisect</span></div>
+<pre><span class="p">$</span> <span class="cmd">agentlens bisect a3ee9e94-424b-4830-a846-983a8ff026af</span>
+<span class="d">agentlens bisect:</span> target check: test  (test failures increased from 0 to 4)
+<span class="d">agentlens bisect:</span> bisecting commits between 4ff79d5308ac..3130fbc52fed
+
+<span class="b">First bad commit (test):</span>
+
+  Commit:  <span class="r">99943b62dc253703</span>
+  Subject: tax: simplify rounding
+  Author:  demo &lt;demo@example.com&gt;
+  Date:    2026-11-03 23:05:00 +0530
+  Files:   <span class="c">billing/tax.py</span>
+
+  Target check:     test
+  Commits in range: 8
+  Check-runs:       3  <span class="d">(log₂(8) ≈ 3.0)</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 05 CI ────────────────────────────────────────────────────────────── -->
+<section class="section" id="ci">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>05</b>CI mode</div>
+      <div>
+        <h2>Gate agent-authored pull requests.</h2>
+        <p class="section-intro"><code>agentlens ci</code> scores a pull request against its base branch in an isolated worktree and fails the build when the score drops below <code>--min-score</code> or a critical regression appears. With <code>--comment</code> it keeps one sticky comment on the PR up to date instead of posting a new one on every push.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="term">
+            <div class="term-bar"><span><b>billing-service</b> — agent/tiered-pricing</span><span>ci</span></div>
+<pre><span class="p">$</span> <span class="cmd">agentlens ci --base main --min-score 80</span>
+<span class="b">AgentLens CI</span>  <span class="d">delta mode</span>
+
+<span class="b">Score: </span><span class="r">50</span><span class="d"> / 100</span>
+<span class="d">────────────────────────────────────────────────</span>
+  coverage delta (-2.0pp)              <span class="r">-1.00</span>
+  lint errors removed (2)              <span class="g">+2.00</span>
+  test regressions (3)                 <span class="r">-45.00</span>
+  type errors added (2)                <span class="r">-6.00</span>
+<span class="d">────────────────────────────────────────────────</span>
+<span class="b">Regressions (2):</span>
+  <span class="r">[high]    </span> 3 test(s) regressed (were passing, now failing)
+             <span class="c">billing/discounts.py</span>  <span class="d">@@ -1,5 +1,3 @@</span>
+  <span class="y">[medium]  </span> 2 type error(s) introduced
+             <span class="c">billing/discounts.py</span>  <span class="d">@@ -1,5 +1,3 @@</span>
+
+Gate: <span class="r">✗ FAIL</span> (score 50 &lt; min 80)
+<span class="p">$</span> <span class="cmd">echo $?</span>
+1</pre>
+          </div>
+      <dl class="exit-codes">
+        <div><dt>exit 0</dt><dd>Score at or above <code>--min-score</code> (default 70) and no critical regressions.</dd></div>
+        <div><dt>exit 1</dt><dd>Below the threshold, or a critical regression such as a build break.</dd></div>
+        <div><dt>--no-fail</dt><dd>Report-only mode: post the numbers, always exit 0.</dd></div>
+      </dl>
+      <div class="pr-wrap">
+        <div class="pr" aria-label="Example pull request comment posted by AgentLens">
+            <div class="pr-head">
+              <span class="pr-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="#f6f5f1" stroke-width="3"/><circle cx="12" cy="12" r="3" fill="#6fca8f"/></svg></span>
+              <span><b>github-actions</b> commented · updated on each push</span>
+            </div>
+            <div class="pr-body">
+              <h4>AgentLens CI Report</h4>
+              <p class="pr-status"><span class="badge-fail">FAIL</span><span>Score: <b>50/100</b></span><span>Mode: delta (base vs HEAD)</span></p>
+              <h5>Score Breakdown</h5>
+              <table>
+                <thead><tr><th>Reason</th><th>Delta</th></tr></thead>
+                <tbody>
+                  <tr><td>coverage delta (-2.0pp)</td><td class="num">-1.00</td></tr>
+                  <tr><td>lint errors removed (2)</td><td class="num">+2.00</td></tr>
+                  <tr><td>test regressions (3)</td><td class="num">-45.00</td></tr>
+                  <tr><td>type errors added (2)</td><td class="num">-6.00</td></tr>
+                </tbody>
+              </table>
+              <h5>Regressions (2)</h5>
+              <table>
+                <thead><tr><th>Severity</th><th>Description</th><th>File</th></tr></thead>
+                <tbody>
+                  <tr><td>high</td><td>3 test(s) regressed (were passing, now failing)</td><td><code>billing/discounts.py</code></td></tr>
+                  <tr><td>medium</td><td>2 type error(s) introduced</td><td><code>billing/discounts.py</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        <p class="figure-caption">The comment body is generated Markdown. This is the same run, rendered.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 06 Comparison ────────────────────────────────────────────────────── -->
+<section class="section" id="compare">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>06</b>Comparison</div>
+      <div>
+        <h2>Compare agents without fooling yourself.</h2>
+        <p class="section-intro"><code>agentlens compare</code> groups sessions by agent and reports the mean, median, spread and a t-based 95% confidence interval. Pairwise comparisons use Welch's t-test, which doesn't assume equal variances, plus Cohen's d for effect size. With fewer than five sessions per agent, it won't call anything significant.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="term">
+        <div class="term-bar"><span><b>demo dataset</b> — 36 sessions</span><span>compare</span></div>
+<pre><span class="p">$</span> <span class="cmd">agentlens compare</span>
+
+<span class="b">AgentLens — agent comparison  (metric: score (0–100, higher is better))</span>
+
+<span class="d">  Agent                     n       Mean     Median     Std Dev   95% CI</span>
+<span class="d">  ──────────────────────────────────────────────────────────────────────</span>
+  <span class="c">aider               </span>       7       78.0       81.0        17.9   [61.5, 94.5]
+  <span class="c">claude-code         </span>       8       76.0       86.5        26.7   [53.7, 98.3]
+  <span class="c">cursor              </span>       7       75.6       91.0        31.6   [46.3, 104.8]
+  <span class="c">copilot             </span>       7       73.4       82.0        23.4   [51.8, 95.0]
+  <span class="c">windsurf            </span>       7       68.9       81.0        26.8   [44.1, 93.6]
+
+<span class="d">  No statistically significant pairwise differences found (p ≥ 0.05 for all pairs with sufficient data).</span>
+
+<span class="p">$</span> <span class="cmd">agentlens compare --agent aider --vs windsurf</span>
+
+  Difference (aider − windsurf): +9.1 points
+  Welch's t = 0.751    df = 10.4    p = 0.4691
+  Cohen's d = 0.40 (small, pooled-SD; interpret cautiously if group variances differ markedly)
+
+  <span class="b">Conclusion:</span> <span class="c">aider</span> scores higher than <span class="c">windsurf</span> by 9.1 points, but the difference is
+  <span class="y">NOT statistically significant</span> given the sample sizes (p=0.4691).</pre>
+      </div>
+      <p class="figure-caption">Run on the same seeded dataset the live dashboard uses. The best and worst agents differ by 9.1 points, which looks decisive in a chart. With this much variance across seven sessions each, it isn't.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── 07 Judge ─────────────────────────────────────────────────────────── -->
+<section class="section" id="judge">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>07</b>LLM judge</div>
+      <div>
+        <h2>An optional judge, measured before it's trusted.</h2>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="split">
+        <div class="prose">
+          <p>Some qualities don't show up in test counts. <code>agentlens judge</code> asks a model to rate a session's diff, and those ratings are stored separately. They never change the deterministic score.</p>
+          <p><code>agentlens judge calibrate</code> runs the judge against ten hand-labeled diffs that ship with the tool and reports mean absolute error per dimension and Spearman's ρ against the human labels. You can see how far a given model is off before you rely on it.</p>
+          <p>Off by default. Responses are cached. The provider can be Anthropic's API or any local OpenAI-compatible endpoint, such as Ollama, so diffs never have to leave the machine.</p>
+        </div>
+        <dl class="ledger" style="grid-template-columns:minmax(0,170px) minmax(0,1fr)">
+          <dt><span class="mono" style="font-size:14px">readability</span></dt><dd>Naming, structure, complexity, and whether intent is obvious.</dd>
+          <dt><span class="mono" style="font-size:14px">scope_discipline</span></dt><dd>Whether the change stayed on purpose or wandered into unrelated files.</dd>
+          <dt><span class="mono" style="font-size:14px">task_match</span></dt><dd>How completely the diff implements the stated task. Scored only when <code>--task</code> is given.</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 08 Local-first ───────────────────────────────────────────────────── -->
+<section class="section" id="privacy">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>08</b>Local-first</div>
+      <div>
+        <h2>Nothing leaves your machine unless you send it.</h2>
+      </div>
+    </div>
+    <div class="section-body">
+      <dl class="ledger">
+        <dt>Storage</dt><dd>One SQLite file, <code>.agentlens/agentlens.db</code>, inside the repository it describes.</dd>
+        <dt>Configuration</dt><dd><code>.agentlens/config.json</code>: scoring weights, cost model, CI threshold, judge provider.</dd>
+        <dt>Dashboard</dt><dd>Served by the CLI on <code>localhost:4319</code>. No account, no sign-in.</dd>
+        <dt>Network</dt><dd>None by default. The only outbound calls are ones you opt into: the LLM judge, and <code>ci --comment</code> posting to GitHub.</dd>
+        <dt>Telemetry</dt><dd>None.</dd>
+        <dt>Cost tracking</dt><dd>Uses real token counts when you pass them (<code>--tokens-in</code>, <code>--tokens-out</code>). Otherwise it estimates from diff size and labels the figure as an estimate.</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ── 09 Dashboard ─────────────────────────────────────────────────────── -->
+<section class="section" id="dashboard">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>09</b>Dashboard</div>
+      <div>
+        <h2>Every session on one timeline.</h2>
+        <p class="section-intro"><code>agentlens dashboard</code> serves a local React app with score and coverage over time, per-session diffs and check deltas, regressions and cost. The hosted demo runs entirely in your browser on 36 seeded synthetic sessions.</p>
+        <div class="cta-row" style="margin:24px 0 0">
+          <a class="btn btn-primary" href="https://agent-lens-one.vercel.app">Open the live demo
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="section-body">
+      <a class="shot" href="https://agent-lens-one.vercel.app" aria-label="Open the live dashboard demo">
+        <picture>
+          <source srcset="assets/dashboard.webp" type="image/webp">
+          <img src="assets/dashboard.jpg" width="1440" height="900" loading="lazy" decoding="async" alt="AgentLens dashboard overview: 36 sessions tracked, 31 regressions caught, average score 74, average session cost $0.2535, a 3D constellation of sessions colored by score, and score and coverage charts over time.">
+        </picture>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── 10 Design notes ──────────────────────────────────────────────────── -->
+<section class="section" id="design">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>10</b>Design notes</div>
+      <div>
+        <h2>Decisions worth defending.</h2>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="notes">
+        <div><h3>Deterministic before intelligent</h3><p>The score is arithmetic over check deltas. The model-based judge reports alongside it and never moves it, so a number in CI means the same thing every time.</p></div>
+        <div><h3>Your commands, not ours</h3><p>AgentLens shells out to the test, type and lint tools the project already uses. It measures what your CI measures, with your configuration.</p></div>
+        <div><h3>Conservative by default</h3><p>A drop in passing tests counts as a regression only when the suite didn't shrink. Missing tools and missing coverage reports never cost points.</p></div>
+        <div><h3>Never touch the user's work</h3><p>Snapshots go through a throwaway git index. CI scoring and bisection run in separate worktrees. AgentLens doesn't commit, reset or stash.</p></div>
+        <div><h3>Pure cores, thin shells</h3><p>Scoring, bisection and statistics are pure functions with no I/O. Welch's t-test is checked against textbook values in a suite of more than 250 unit tests.</p></div>
+        <div><h3>Honest about uncertainty</h3><p>Estimated costs are labeled as estimates. Comparisons below five sessions are flagged as directional. The judge reports its own error rate.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 11 Install ───────────────────────────────────────────────────────── -->
+<section class="section" id="install">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-num"><b>11</b>Install</div>
+      <div>
+        <h2>Install from source.</h2>
+        <p class="section-intro">AgentLens isn't on npm yet. You need Node 18 or later and git; the host project can be JavaScript, TypeScript or Python.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="install-grid">
+        <div class="term">
+          <div class="term-bar"><span><b>1</b> — build and link</span><button type="button" class="copy-btn" data-copy="install-1">Copy</button></div>
+<pre id="install-1"><span class="p">$</span> <span class="cmd">git clone https://github.com/anonymousz77/AgentLens.git</span>
+<span class="p">$</span> <span class="cmd">cd AgentLens</span>
+<span class="p">$</span> <span class="cmd">npm install &amp;&amp; npm run build</span>
+<span class="p">$</span> <span class="cmd">npm link</span>   <span class="note"># puts `agentlens` on your PATH</span></pre>
+        </div>
+        <div class="term">
+          <div class="term-bar"><span><b>2</b> — use it in a project</span><button type="button" class="copy-btn" data-copy="install-2">Copy</button></div>
+<pre id="install-2"><span class="p">$</span> <span class="cmd">cd ~/code/your-project</span>
+<span class="p">$</span> <span class="cmd">agentlens init</span>
+<span class="p">$</span> <span class="cmd">agentlens run --agent claude-code -- claude --print "fix the failing tests"</span>
+<span class="p">$</span> <span class="cmd">agentlens dashboard</span></pre>
+        </div>
+      </div>
+      <p class="requirements">To look around without recording anything, run <code>agentlens dashboard --demo</code>, which serves synthetic data and never touches your database.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <a class="brand" href="#top">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="#17703f"/></svg>
+        AgentLens
+      </a>
+      <p>Local-first quality scores for AI coding-agent sessions.</p>
+      <p>Designed and built by <a href="https://github.com/anonymousz77">Lakshya</a>. MIT licensed.</p>
+    </div>
+    <nav class="footer-links" aria-label="Project links">
+      <a href="https://github.com/anonymousz77/AgentLens">Source</a>
+      <a href="https://agent-lens-one.vercel.app">Live demo</a>
+      <a href="https://github.com/anonymousz77/AgentLens/blob/main/AgentLens-SPEC.md">Specification</a>
+      <a href="https://github.com/anonymousz77/AgentLens/issues">Issues</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
